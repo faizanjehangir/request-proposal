@@ -1,0 +1,1799 @@
+{
+  "version": "6",
+  "dialect": "sqlite",
+  "id": "79a6267e-004c-4d42-9c32-e8e8960b8c6d",
+  "prevId": "c2734267-fc3b-4e51-8024-4085fa72b39d",
+  "tables": {
+    "accepted_proposals": {
+      "name": "accepted_proposals",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "rfpId": {
+          "name": "rfpId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "quoteVersionId": {
+          "name": "quoteVersionId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "replyId": {
+          "name": "replyId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "acceptedAt": {
+          "name": "acceptedAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "recipient": {
+          "name": "recipient",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "subject": {
+          "name": "subject",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "body": {
+          "name": "body",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "evidence": {
+          "name": "evidence",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "lanes": {
+          "name": "lanes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "accepted_proposals_rfpId_unique": {
+          "name": "accepted_proposals_rfpId_unique",
+          "columns": [
+            "rfpId"
+          ],
+          "isUnique": true
+        },
+        "accepted_proposals_quoteVersionId_unique": {
+          "name": "accepted_proposals_quoteVersionId_unique",
+          "columns": [
+            "quoteVersionId"
+          ],
+          "isUnique": true
+        },
+        "accepted_proposals_replyId_unique": {
+          "name": "accepted_proposals_replyId_unique",
+          "columns": [
+            "replyId"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "accepted_proposals_rfpId_rfps_id_fk": {
+          "name": "accepted_proposals_rfpId_rfps_id_fk",
+          "tableFrom": "accepted_proposals",
+          "tableTo": "rfps",
+          "columnsFrom": [
+            "rfpId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "accepted_proposals_quoteVersionId_quote_versions_id_fk": {
+          "name": "accepted_proposals_quoteVersionId_quote_versions_id_fk",
+          "tableFrom": "accepted_proposals",
+          "tableTo": "quote_versions",
+          "columnsFrom": [
+            "quoteVersionId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "accepted_proposals_replyId_customer_replies_messageId_fk": {
+          "name": "accepted_proposals_replyId_customer_replies_messageId_fk",
+          "tableFrom": "accepted_proposals",
+          "tableTo": "customer_replies",
+          "columnsFrom": [
+            "replyId"
+          ],
+          "columnsTo": [
+            "messageId"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "activity_events": {
+      "name": "activity_events",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "rfpId": {
+          "name": "rfpId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "stage": {
+          "name": "stage",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "sourceName": {
+          "name": "sourceName",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "target": {
+          "name": "target",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "result": {
+          "name": "result",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "nextAction": {
+          "name": "nextAction",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "occurredAt": {
+          "name": "occurredAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "issues": {
+          "name": "issues",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "activity_events_by_rfp": {
+          "name": "activity_events_by_rfp",
+          "columns": [
+            "rfpId",
+            "id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "activity_events_rfpId_rfps_id_fk": {
+          "name": "activity_events_rfpId_rfps_id_fk",
+          "tableFrom": "activity_events",
+          "tableTo": "rfps",
+          "columnsFrom": [
+            "rfpId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "customer_replies": {
+      "name": "customer_replies",
+      "columns": {
+        "messageId": {
+          "name": "messageId",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "quoteVersionId": {
+          "name": "quoteVersionId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "inReplyToId": {
+          "name": "inReplyToId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "intent": {
+          "name": "intent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "evidence": {
+          "name": "evidence",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "explanation": {
+          "name": "explanation",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "resolution": {
+          "name": "resolution",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "resolutionNote": {
+          "name": "resolutionNote",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "reviewedAt": {
+          "name": "reviewedAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "reviewerId": {
+          "name": "reviewerId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "customer_replies_by_quote": {
+          "name": "customer_replies_by_quote",
+          "columns": [
+            "quoteVersionId",
+            "messageId"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "customer_replies_messageId_email_messages_id_fk": {
+          "name": "customer_replies_messageId_email_messages_id_fk",
+          "tableFrom": "customer_replies",
+          "tableTo": "email_messages",
+          "columnsFrom": [
+            "messageId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "customer_replies_quoteVersionId_quote_versions_id_fk": {
+          "name": "customer_replies_quoteVersionId_quote_versions_id_fk",
+          "tableFrom": "customer_replies",
+          "tableTo": "quote_versions",
+          "columnsFrom": [
+            "quoteVersionId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "customer_replies_inReplyToId_email_messages_id_fk": {
+          "name": "customer_replies_inReplyToId_email_messages_id_fk",
+          "tableFrom": "customer_replies",
+          "tableTo": "email_messages",
+          "columnsFrom": [
+            "inReplyToId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "customer_replies_reviewerId_reviewers_id_fk": {
+          "name": "customer_replies_reviewerId_reviewers_id_fk",
+          "tableFrom": "customer_replies",
+          "tableTo": "reviewers",
+          "columnsFrom": [
+            "reviewerId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "email_messages": {
+      "name": "email_messages",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "rfpId": {
+          "name": "rfpId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "messageKey": {
+          "name": "messageKey",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "threadKey": {
+          "name": "threadKey",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "direction": {
+          "name": "direction",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "sender": {
+          "name": "sender",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "recipient": {
+          "name": "recipient",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "subject": {
+          "name": "subject",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "body": {
+          "name": "body",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "recordedAt": {
+          "name": "recordedAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "email_messages_messageKey_unique": {
+          "name": "email_messages_messageKey_unique",
+          "columns": [
+            "messageKey"
+          ],
+          "isUnique": true
+        },
+        "email_messages_by_thread": {
+          "name": "email_messages_by_thread",
+          "columns": [
+            "rfpId",
+            "threadKey",
+            "id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "email_messages_rfpId_rfps_id_fk": {
+          "name": "email_messages_rfpId_rfps_id_fk",
+          "tableFrom": "email_messages",
+          "tableTo": "rfps",
+          "columnsFrom": [
+            "rfpId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "flight_legs": {
+      "name": "flight_legs",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "snapshotId": {
+          "name": "snapshotId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "sourceRow": {
+          "name": "sourceRow",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "origin": {
+          "name": "origin",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "destination": {
+          "name": "destination",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "transitDays": {
+          "name": "transitDays",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "services": {
+          "name": "services",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "flight_legs_snapshotId_sourceRow_unique": {
+          "name": "flight_legs_snapshotId_sourceRow_unique",
+          "columns": [
+            "snapshotId",
+            "sourceRow"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "flight_legs_snapshotId_transit_snapshots_id_fk": {
+          "name": "flight_legs_snapshotId_transit_snapshots_id_fk",
+          "tableFrom": "flight_legs",
+          "tableTo": "transit_snapshots",
+          "columnsFrom": [
+            "snapshotId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "kickoff_invites": {
+      "name": "kickoff_invites",
+      "columns": {
+        "proposalId": {
+          "name": "proposalId",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "providerId": {
+          "name": "providerId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "startAt": {
+          "name": "startAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "endAt": {
+          "name": "endAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "timezone": {
+          "name": "timezone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "attendees": {
+          "name": "attendees",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "bookedAt": {
+          "name": "bookedAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "kickoff_invites_providerId_unique": {
+          "name": "kickoff_invites_providerId_unique",
+          "columns": [
+            "providerId"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "kickoff_invites_proposalId_accepted_proposals_id_fk": {
+          "name": "kickoff_invites_proposalId_accepted_proposals_id_fk",
+          "tableFrom": "kickoff_invites",
+          "tableTo": "accepted_proposals",
+          "columnsFrom": [
+            "proposalId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "lane_reviews": {
+      "name": "lane_reviews",
+      "columns": {
+        "laneId": {
+          "name": "laneId",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "extracted": {
+          "name": "extracted",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "requirements": {
+          "name": "requirements",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "assessment": {
+          "name": "assessment",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "disposition": {
+          "name": "disposition",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "dispositionReason": {
+          "name": "dispositionReason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "reviewerId": {
+          "name": "reviewerId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "revision": {
+          "name": "revision",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "lane_reviews_laneId_lanes_id_fk": {
+          "name": "lane_reviews_laneId_lanes_id_fk",
+          "tableFrom": "lane_reviews",
+          "tableTo": "lanes",
+          "columnsFrom": [
+            "laneId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "lane_reviews_reviewerId_reviewers_id_fk": {
+          "name": "lane_reviews_reviewerId_reviewers_id_fk",
+          "tableFrom": "lane_reviews",
+          "tableTo": "reviewers",
+          "columnsFrom": [
+            "reviewerId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "lanes": {
+      "name": "lanes",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "rfpId": {
+          "name": "rfpId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "sourceRow": {
+          "name": "sourceRow",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "origin": {
+          "name": "origin",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "destination": {
+          "name": "destination",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "tons": {
+          "name": "tons",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "maxTransitDays": {
+          "name": "maxTransitDays",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "shipperNote": {
+          "name": "shipperNote",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "lanes_rfpId_origin_destination_unique": {
+          "name": "lanes_rfpId_origin_destination_unique",
+          "columns": [
+            "rfpId",
+            "origin",
+            "destination"
+          ],
+          "isUnique": true
+        },
+        "lanes_rfpId_sourceRow_unique": {
+          "name": "lanes_rfpId_sourceRow_unique",
+          "columns": [
+            "rfpId",
+            "sourceRow"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "lanes_rfpId_rfps_id_fk": {
+          "name": "lanes_rfpId_rfps_id_fk",
+          "tableFrom": "lanes",
+          "tableTo": "rfps",
+          "columnsFrom": [
+            "rfpId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "outbox_jobs": {
+      "name": "outbox_jobs",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "rfpId": {
+          "name": "rfpId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "pricingRequestId": {
+          "name": "pricingRequestId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "quoteVersionId": {
+          "name": "quoteVersionId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "acceptedProposalId": {
+          "name": "acceptedProposalId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "simulateFailure": {
+          "name": "simulateFailure",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "attempts": {
+          "name": "attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "availableAt": {
+          "name": "availableAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "leaseUntil": {
+          "name": "leaseUntil",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "leaseToken": {
+          "name": "leaseToken",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "lastError": {
+          "name": "lastError",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "completedAt": {
+          "name": "completedAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "outbox_jobs_pricingRequestId_unique": {
+          "name": "outbox_jobs_pricingRequestId_unique",
+          "columns": [
+            "pricingRequestId"
+          ],
+          "isUnique": true
+        },
+        "outbox_jobs_quoteVersionId_unique": {
+          "name": "outbox_jobs_quoteVersionId_unique",
+          "columns": [
+            "quoteVersionId"
+          ],
+          "isUnique": true
+        },
+        "outbox_jobs_acceptedProposalId_unique": {
+          "name": "outbox_jobs_acceptedProposalId_unique",
+          "columns": [
+            "acceptedProposalId"
+          ],
+          "isUnique": true
+        },
+        "outbox_jobs_pending": {
+          "name": "outbox_jobs_pending",
+          "columns": [
+            "status",
+            "availableAt",
+            "id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "outbox_jobs_rfpId_rfps_id_fk": {
+          "name": "outbox_jobs_rfpId_rfps_id_fk",
+          "tableFrom": "outbox_jobs",
+          "tableTo": "rfps",
+          "columnsFrom": [
+            "rfpId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "outbox_jobs_pricingRequestId_pricing_requests_id_fk": {
+          "name": "outbox_jobs_pricingRequestId_pricing_requests_id_fk",
+          "tableFrom": "outbox_jobs",
+          "tableTo": "pricing_requests",
+          "columnsFrom": [
+            "pricingRequestId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "outbox_jobs_quoteVersionId_quote_versions_id_fk": {
+          "name": "outbox_jobs_quoteVersionId_quote_versions_id_fk",
+          "tableFrom": "outbox_jobs",
+          "tableTo": "quote_versions",
+          "columnsFrom": [
+            "quoteVersionId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "outbox_jobs_acceptedProposalId_accepted_proposals_id_fk": {
+          "name": "outbox_jobs_acceptedProposalId_accepted_proposals_id_fk",
+          "tableFrom": "outbox_jobs",
+          "tableTo": "accepted_proposals",
+          "columnsFrom": [
+            "acceptedProposalId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "outbox_job_reference": {
+          "name": "outbox_job_reference",
+          "value": "\n    (\"outbox_jobs\".\"kind\" = 'pricing_email' AND \"outbox_jobs\".\"pricingRequestId\" IS NOT NULL AND \"outbox_jobs\".\"quoteVersionId\" IS NULL AND \"outbox_jobs\".\"acceptedProposalId\" IS NULL)\n    OR (\"outbox_jobs\".\"kind\" = 'quote_email' AND \"outbox_jobs\".\"quoteVersionId\" IS NOT NULL AND \"outbox_jobs\".\"pricingRequestId\" IS NULL AND \"outbox_jobs\".\"acceptedProposalId\" IS NULL)\n    OR (\"outbox_jobs\".\"kind\" = 'kickoff' AND \"outbox_jobs\".\"acceptedProposalId\" IS NOT NULL AND \"outbox_jobs\".\"pricingRequestId\" IS NULL AND \"outbox_jobs\".\"quoteVersionId\" IS NULL)\n  "
+        }
+      }
+    },
+    "pricing_rates": {
+      "name": "pricing_rates",
+      "columns": {
+        "replyId": {
+          "name": "replyId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "laneId": {
+          "name": "laneId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "amountCents": {
+          "name": "amountCents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "currency": {
+          "name": "currency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "unit": {
+          "name": "unit",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "services": {
+          "name": "services",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "evidence": {
+          "name": "evidence",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "pricing_rates_replyId_laneId_unique": {
+          "name": "pricing_rates_replyId_laneId_unique",
+          "columns": [
+            "replyId",
+            "laneId"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "pricing_rates_replyId_pricing_replies_messageId_fk": {
+          "name": "pricing_rates_replyId_pricing_replies_messageId_fk",
+          "tableFrom": "pricing_rates",
+          "tableTo": "pricing_replies",
+          "columnsFrom": [
+            "replyId"
+          ],
+          "columnsTo": [
+            "messageId"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "pricing_rates_laneId_lanes_id_fk": {
+          "name": "pricing_rates_laneId_lanes_id_fk",
+          "tableFrom": "pricing_rates",
+          "tableTo": "lanes",
+          "columnsFrom": [
+            "laneId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "pricing_amount_positive": {
+          "name": "pricing_amount_positive",
+          "value": "\"pricing_rates\".\"amountCents\" > 0"
+        },
+        "pricing_usd_per_ton": {
+          "name": "pricing_usd_per_ton",
+          "value": "\"pricing_rates\".\"currency\" = 'USD' AND \"pricing_rates\".\"unit\" = 'ton'"
+        }
+      }
+    },
+    "pricing_replies": {
+      "name": "pricing_replies",
+      "columns": {
+        "messageId": {
+          "name": "messageId",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "requestId": {
+          "name": "requestId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "issues": {
+          "name": "issues",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "pricing_replies_by_request": {
+          "name": "pricing_replies_by_request",
+          "columns": [
+            "requestId",
+            "messageId"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "pricing_replies_messageId_email_messages_id_fk": {
+          "name": "pricing_replies_messageId_email_messages_id_fk",
+          "tableFrom": "pricing_replies",
+          "tableTo": "email_messages",
+          "columnsFrom": [
+            "messageId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "pricing_replies_requestId_pricing_requests_id_fk": {
+          "name": "pricing_replies_requestId_pricing_requests_id_fk",
+          "tableFrom": "pricing_replies",
+          "tableTo": "pricing_requests",
+          "columnsFrom": [
+            "requestId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "pricing_requests": {
+      "name": "pricing_requests",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "rfpId": {
+          "name": "rfpId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "scope": {
+          "name": "scope",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "scopeHash": {
+          "name": "scopeHash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "pricing_requests_by_rfp": {
+          "name": "pricing_requests_by_rfp",
+          "columns": [
+            "rfpId",
+            "id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "pricing_requests_rfpId_rfps_id_fk": {
+          "name": "pricing_requests_rfpId_rfps_id_fk",
+          "tableFrom": "pricing_requests",
+          "tableTo": "rfps",
+          "columnsFrom": [
+            "rfpId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "quote_approvals": {
+      "name": "quote_approvals",
+      "columns": {
+        "quoteVersionId": {
+          "name": "quoteVersionId",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "reviewerId": {
+          "name": "reviewerId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "approvedAt": {
+          "name": "approvedAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "quote_approvals_quoteVersionId_quote_versions_id_fk": {
+          "name": "quote_approvals_quoteVersionId_quote_versions_id_fk",
+          "tableFrom": "quote_approvals",
+          "tableTo": "quote_versions",
+          "columnsFrom": [
+            "quoteVersionId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "quote_approvals_reviewerId_reviewers_id_fk": {
+          "name": "quote_approvals_reviewerId_reviewers_id_fk",
+          "tableFrom": "quote_approvals",
+          "tableTo": "reviewers",
+          "columnsFrom": [
+            "reviewerId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "quote_versions": {
+      "name": "quote_versions",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "rfpId": {
+          "name": "rfpId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "pricingReplyId": {
+          "name": "pricingReplyId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "termsHash": {
+          "name": "termsHash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "lanes": {
+          "name": "lanes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "wording": {
+          "name": "wording",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "recipient": {
+          "name": "recipient",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "subject": {
+          "name": "subject",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "body": {
+          "name": "body",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "quote_versions_rfpId_version_unique": {
+          "name": "quote_versions_rfpId_version_unique",
+          "columns": [
+            "rfpId",
+            "version"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "quote_versions_rfpId_rfps_id_fk": {
+          "name": "quote_versions_rfpId_rfps_id_fk",
+          "tableFrom": "quote_versions",
+          "tableTo": "rfps",
+          "columnsFrom": [
+            "rfpId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "quote_versions_pricingReplyId_pricing_replies_messageId_fk": {
+          "name": "quote_versions_pricingReplyId_pricing_replies_messageId_fk",
+          "tableFrom": "quote_versions",
+          "tableTo": "pricing_replies",
+          "columnsFrom": [
+            "pricingReplyId"
+          ],
+          "columnsTo": [
+            "messageId"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "reviewers": {
+      "name": "reviewers",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "rfps": {
+      "name": "rfps",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "reviewerId": {
+          "name": "reviewerId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "importedAt": {
+          "name": "importedAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "rfps_reviewerId_reviewers_id_fk": {
+          "name": "rfps_reviewerId_reviewers_id_fk",
+          "tableFrom": "rfps",
+          "tableTo": "reviewers",
+          "columnsFrom": [
+            "reviewerId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "routing_analyses": {
+      "name": "routing_analyses",
+      "columns": {
+        "rfpId": {
+          "name": "rfpId",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "mode": {
+          "name": "mode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "issues": {
+          "name": "issues",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "issuesReviewedAt": {
+          "name": "issuesReviewedAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "analyzedAt": {
+          "name": "analyzedAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "routing_analyses_rfpId_rfps_id_fk": {
+          "name": "routing_analyses_rfpId_rfps_id_fk",
+          "tableFrom": "routing_analyses",
+          "tableTo": "rfps",
+          "columnsFrom": [
+            "rfpId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "source_files": {
+      "name": "source_files",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "rfpId": {
+          "name": "rfpId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "content": {
+          "name": "content",
+          "type": "blob",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "emailText": {
+          "name": "emailText",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "source_files_rfpId_kind_unique": {
+          "name": "source_files_rfpId_kind_unique",
+          "columns": [
+            "rfpId",
+            "kind"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "source_files_rfpId_rfps_id_fk": {
+          "name": "source_files_rfpId_rfps_id_fk",
+          "tableFrom": "source_files",
+          "tableTo": "rfps",
+          "columnsFrom": [
+            "rfpId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "source_kind_and_text": {
+          "name": "source_kind_and_text",
+          "value": "\n    (\"source_files\".\"kind\" = 'workbook' AND \"source_files\".\"emailText\" IS NULL)\n    OR (\"source_files\".\"kind\" = 'shipper_email' AND \"source_files\".\"emailText\" IS NOT NULL)\n  "
+        }
+      }
+    },
+    "transit_snapshots": {
+      "name": "transit_snapshots",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "rfpId": {
+          "name": "rfpId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "sourceFileId": {
+          "name": "sourceFileId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "sheetName": {
+          "name": "sheetName",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "transit_snapshots_rfpId_unique": {
+          "name": "transit_snapshots_rfpId_unique",
+          "columns": [
+            "rfpId"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "transit_snapshots_rfpId_rfps_id_fk": {
+          "name": "transit_snapshots_rfpId_rfps_id_fk",
+          "tableFrom": "transit_snapshots",
+          "tableTo": "rfps",
+          "columnsFrom": [
+            "rfpId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "transit_snapshots_sourceFileId_source_files_id_fk": {
+          "name": "transit_snapshots_sourceFileId_source_files_id_fk",
+          "tableFrom": "transit_snapshots",
+          "tableTo": "source_files",
+          "columnsFrom": [
+            "sourceFileId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "indexes": {}
+  }
+}

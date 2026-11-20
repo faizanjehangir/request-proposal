@@ -1,0 +1,39 @@
+{
+  "name": "air-freight-rfp",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "dev": "node scripts/run-node.cjs node_modules/next/dist/bin/next dev --hostname 127.0.0.1",
+    "build": "node scripts/run-node.cjs node_modules/next/dist/bin/next build",
+    "start": "node scripts/run-node.cjs node_modules/next/dist/bin/next start --hostname 127.0.0.1",
+    "db:setup": "node scripts/run-node.cjs --import tsx scripts/setup-db.ts",
+    "typecheck": "node scripts/run-node.cjs node_modules/typescript/bin/tsc --noEmit",
+    "test": "node scripts/run-node.cjs --import tsx --test tests/*.test.ts",
+    "worker": "node scripts/run-node.cjs --import tsx scripts/workflow-worker.ts",
+    "test:e2e": "npm run build && node scripts/run-node.cjs --import tsx scripts/run-e2e.ts"
+  },
+  "dependencies": {
+    "@next/env": "^16.4.6",
+    "better-sqlite3": "^12",
+    "drizzle-orm": "^0.45",
+    "next": "^16",
+    "react": "^19.2",
+    "react-dom": "^19.2",
+    "read-excel-file": "^9.3.17",
+    "zod": "^4"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.1",
+    "@types/better-sqlite3": "^7",
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "drizzle-kit": "^0.31.11",
+    "exceljs": "^3.4.0",
+    "tsx": "^4",
+    "typescript": "^5"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1794967290482,
+      "tag": "0000_phase1_intake",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1794970406698,
+      "tag": "0001_phase2_routing",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1795018544799,
+      "tag": "0002_phase3_pricing",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1795058911474,
+      "tag": "0003_phase4_quote",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1795060179283,
+      "tag": "0004_phase5_closeout",
+      "breakpoints": true
+    }
+  ]
+}

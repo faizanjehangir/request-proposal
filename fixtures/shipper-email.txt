@@ -1,0 +1,12 @@
+Subject: Air freight RFP
+
+Hello RFP team,
+
+MEX to CDG requires dangerous-goods handling on every flight.
+GRU to SIN needs fragile handling for the shipment.
+FAI to SIN can use standard general cargo.
+
+Other lanes follow their workbook notes.
+
+Thanks,
+The simulated shipper

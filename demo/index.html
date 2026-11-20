@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Air freight · RFP workflow demo</title>
+<style>
+:root{color-scheme:light;--ink:#152823;--sub:#50635b;--line:#d9e2dc;--green:#13644d;--deep:#183a30;--paper:#f2f5f1;--mint:#e5f3e9;--amber:#765012;--sand:#f9ebce}
+*{box-sizing:border-box} body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.55 system-ui,sans-serif}
+header{background:var(--deep);color:white} .frame{width:min(1320px,100%);margin:auto;padding-inline:clamp(16px,4vw,56px)}
+.mast{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;padding-block:14px;border-bottom:1px solid #426056}
+.mast strong{letter-spacing:.08em;font-size:.84rem;text-transform:uppercase}.mast span{color:#c9e0d5;font-size:.83rem}
+.hero{padding-block:26px 33px} h1,h2,h3,p{margin:0} h1{font-size:clamp(2rem,5vw,3.55rem);line-height:1.06;letter-spacing:-.05em}
+.hero p{color:#d4e7dd;margin-top:10px} h2{font-size:1.32rem;letter-spacing:-.025em} h3{font-size:1rem}
+main{padding-block:23px 42px} ol,ul{margin:0;padding-left:1.25rem}
+.progress{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:0;list-style:none;margin-bottom:20px}
+.progress li{border-top:3px solid #c6d3cc;padding:8px 7px;font-weight:650;color:var(--sub);font-size:.86rem}
+.progress [data-state="current"]{border-color:var(--green);color:var(--ink);background:var(--mint)}
+.progress [data-state="done"]{border-color:#6eab92}
+.layout{display:grid;grid-template-columns:minmax(0,2.1fr) minmax(260px,1fr);gap:18px;align-items:start}
+.stack{display:grid;gap:16px;min-width:0}.card{background:white;border:1px solid var(--line);border-radius:14px;padding:clamp(13px,2.1vw,23px);min-width:0}
+.section-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px}
+.section-head p,.muted{color:var(--sub);font-size:.9rem}.badge{display:inline-block;border-radius:6px;background:var(--mint);color:#215b45;padding:3px 8px;font-size:.78rem;font-weight:700}
+.badge.review{background:var(--sand);color:var(--amber)} .badge.neutral{background:#e9eeeb;color:#41554c}
+details{border-top:1px solid var(--line)} details:last-child{border-bottom:1px solid var(--line)} summary{cursor:pointer;padding:12px 0;font-weight:650}
+.lane summary .badge{margin-left:7px}.lane-content{padding:0 0 14px 16px}.lane-content p+p{margin-top:6px}
+.evidence{margin:10px 0;background:#f1f6f2;border-left:3px solid #8fb09d;padding:9px 12px;color:#3a5348}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+button{font:inherit;font-size:.87rem;font-weight:700;background:#fff;color:var(--green);border:1px solid #91aa9e;border-radius:7px;padding:8px 11px;cursor:pointer}
+button:hover:enabled{background:var(--mint)}button.primary{background:var(--green);color:#fff;border-color:var(--green)}button.primary:hover:enabled{background:#174f40}
+button:disabled{cursor:default;color:#52635b;background:#e9eeeb;border-color:#d7e0da}
+button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid #287cba;outline-offset:2px}
+.notice{margin-top:12px;border-radius:8px;background:var(--sand);padding:9px 12px;color:#62420e;font-size:.9rem}
+.message{white-space:pre-wrap;overflow-wrap:anywhere;background:#f1f6f2;border:1px solid var(--line);border-radius:8px;padding:12px;margin:10px 0 0;font:inherit;font-size:.9rem}
+.log{list-style:none;padding:0;margin-top:8px}.log li{padding:12px 0 12px 15px;border-bottom:1px solid var(--line);position:relative}
+.log li::before{content:"";position:absolute;left:0;top:20px;width:7px;height:7px;background:#55967d;border-radius:50%}
+.log li[data-type="review"]::before{background:#a97924}.log li:last-child{border-bottom:0}.log p{font-size:.87rem;color:var(--sub)}
+.eyebrow{display:block;color:var(--sub);font-size:.73rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase}
+.map{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:0;list-style:none}
+.map li{display:grid;align-content:start;gap:5px;border-top:3px solid #7bad97;background:#f1f6f2;padding:9px;border-radius:4px;font-size:.88rem}
+.map li span{color:var(--sub);font-size:.81rem} footer{margin-top:18px;display:flex;flex-wrap:wrap;gap:10px 18px;color:var(--sub)}
+a{color:var(--green);text-underline-offset:3px}
+@media(max-width:820px){.layout{grid-template-columns:1fr}.map{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:420px){.progress{gap:3px}.progress li{font-size:.72rem;padding-inline:3px}.lane-content{padding-left:0}}
+</style>
+</head>
+<body>
+<header>
+  <div class="frame mast"><strong>Air Freight · RFP Response</strong><span>Simulated workflow · 3 workbook lanes</span></div>
+  <div class="frame hero">
+    <h1>From request to kickoff</h1>
+    <p>Resolve the lane exceptions, request rates, and see what happens when the shipper replies.</p>
+  </div>
+</header>
+<main class="frame">
+  <ol class="progress" id="progress" aria-label="Proposal progress">
+    <li>Review lanes</li><li>Get pricing</li><li>Send quote</li><li>Acceptance</li><li>Kickoff</li>
+  </ol>
+  <div class="layout">
+    <div id="workflow" class="stack"></div>
+    <aside class="card" aria-labelledby="activity-title">
+      <div class="section-head">
+        <div><h2 id="activity-title">Agent orchestration</h2><p>Actions, results, and requests for review</p></div>
+      </div>
+      <ol class="log" id="activity" aria-live="polite" aria-relevant="additions"></ol>
+    </aside>
+  </div>
+  <section class="card" style="margin-top:16px" aria-labelledby="map-title">
+    <div class="section-head"><h2 id="map-title">System at a glance</h2></div>
+    <ol class="map">
+      <li><strong>Import →</strong><span>Shipper lane table, request text, and flight inventory</span></li>
+      <li><strong>Evaluate →</strong><span>AI requirement extraction, route engine, and reviewer decisions</span></li>
+      <li><strong>Quote →</strong><span>Pricing email, rate checks, quote approval, and customer email</span></li>
+      <li><strong>Close</strong><span>Customer acceptance, SQL proposal record, and calendar kickoff</span></li>
+    </ol>
+  </section>
+  <footer>
+    <a href="../docs/design-spec.md">Design specification</a>
+    <a href="../docs/component-map.html">Component map</a>
+    <a href="../Air_Freight_RFP_Mock_Data.xlsx">Source workbook</a>
+    <button type="button" id="reset">Reset walkthrough</button>
+  </footer>
+</main>
+<script>
+const workflow = document.getElementById("workflow");
+const activity = document.getElementById("activity");
+const progress = [...document.getElementById("progress").children];
+const initialState = () => ({
+  fragile: "", unreachable: false, pricing: "", approved: false, sent: false,
+  reply: "", accepted: false, kickoff: "", replays: 0
+});
+let state = initialState();
+
+const events = [
+  ["Intake", "Imported 3 sample lanes", "Read lane rows 2, 3 and 5 and loaded the flight inventory."],
+  ["AI extraction", "Mapped request text to lane requirements", "Found dangerous goods for MEX → CDG and fragile handling for GRU → SIN."],
+  ["Route engine", "Evaluated flight paths and services", "MEX → CDG meets all requirements. GRU → SIN and FAI → SIN need a disposition.", "review"]
+];
+
+function addEvent(source, title, detail, type = "complete") {
+  const entry = document.createElement("li");
+  entry.dataset.type = type;
+  const label = document.createElement("span");
+  label.className = "eyebrow";
+  label.textContent = source;
+  const heading = document.createElement("h3");
+  heading.textContent = title;
+  const body = document.createElement("p");
+  body.textContent = detail;
+  entry.append(label, heading, body);
+  activity.prepend(entry);
+}
+
+function badge(text, tone = "") {
+  return `<span class="badge ${tone}">${text}</span>`;
+}
+
+function button(action, label, {primary = false, disabled = false} = {}) {
+  return `<button type="button" data-action="${action}" ${primary ? 'class="primary"' : ''} ${disabled ? "disabled" : ""}>${label}</button>`;
+}
+
+function section(title, summary, body) {
+  return `<section class="card"><div class="section-head"><div><h2>${title}</h2><p>${summary}</p></div></div>${body}</section>`;
+}
+
+function lane(key, title, status, body) {
+  return `<details class="lane" data-lane="${key}" open><summary>${title} ${status}</summary><div class="lane-content">${body}</div></details>`;
+}
+
+function message(label, text) {
+  return `<details open><summary>${label}</summary><div class="message">${text}</div></details>`;
+}
+
+function lanesView() {
+  const locked = Boolean(state.pricing);
+  const mex = lane("mex", "MEX → CDG · 12.3 tons", badge("Meets request"),
+    `<p><strong>MEX → CDG</strong> · 11 days, within the 11-day limit</p>
+    <p>Dangerous goods supported. The 10-day route via LHR has a service gap on MEX → LHR.</p>
+    <blockquote class="evidence">“Please arrange dangerous-goods handling on every leg.” <small>Shipper row 3</small></blockquote>`);
+  const gruStatus = state.fragile === "offer" ? badge("Alternative selected") :
+    state.fragile === "decline" ? badge("No offer", "neutral") : badge("Decision needed", "review");
+  const gru = lane("gru", "GRU → SIN · 19.1 tons", gruStatus,
+    `<p><strong>GRU → SIN</strong> · 4 days, within the 8-day limit</p>
+    <p>Fragile handling is unavailable on the direct route. The fastest route with fragile handling goes via DXB and MIA and takes 11 days.</p>
+    <blockquote class="evidence">“The contents are fragile, so please arrange fragile handling.” <small>Shipper row 5</small></blockquote>
+    <div class="actions">${button("offer", "Offer with disclosed gap", {disabled: locked || state.fragile === "offer"})}${button("decline", "Decline lane", {disabled: locked || state.fragile === "decline"})}</div>`);
+  const fai = lane("fai", "FAI → SIN · 46.1 tons",
+    state.unreachable ? badge("No offer", "neutral") : badge("Decision needed", "review"),
+    `<p><strong>No route in the flight inventory.</strong> FAI and ANC only connect to each other in the flight inventory. The requested limit is 20 days.</p>
+    <blockquote class="evidence">“Standard general cargo is fine; no special services needed.” <small>Shipper row 2</small></blockquote>
+    <div class="actions">${button("no-route", "Confirm no offer", {disabled: state.unreachable})}</div>`);
+  return section("Lane review", "Compare the proposed route against each shipper requirement.", mex + gru + fai);
+}
+
+function pricingView() {
+  const ready = Boolean(state.fragile) && state.unreachable;
+  const alternative = state.fragile === "offer";
+  let body = `<div class="actions">${button("request", "Send simulated Pricing email", {primary: true, disabled: !ready || Boolean(state.pricing)})}</div>`;
+  if (!ready) body += '<p class="notice">Resolve the two flagged lanes to request pricing.</p>';
+  if (state.pricing) {
+    body = message("Email to Pricing", `Subject: Rate request · RFP-1042
+MEX → CDG | 12.3 tons | MEX → CDG, 11 days | Dangerous goods included${alternative ? '\nGRU → SIN | 19.1 tons | GRU → SIN, 4 days | Fragile handling requested and excluded; rate standard handling' : ""}
+Please reply with USD per ton for the listed scope.`);
+    if (["requested", "incomplete"].includes(state.pricing)) {
+      body += `<div class="actions">${button("rate-complete", "Simulate complete reply", {primary: true})}${button("rate-incomplete", "Simulate incomplete reply", {disabled: state.pricing === "incomplete"})}</div>`;
+    }
+    if (["incomplete", "complete"].includes(state.pricing)) {
+      const reply = state.pricing === "complete"
+        ? `Hi team, MEX to CDG is USD 1,840 per ton, including dangerous-goods handling.${alternative ? " For GRU to SIN, use USD 2,240 per ton for standard handling only." : ""} Thanks, Pricing.`
+        : alternative
+          ? "Hi team, MEX to CDG is USD 1,840 per ton including dangerous goods. Still checking GRU to SIN. Thanks, Pricing."
+          : "Hi team, still checking MEX to CDG. I’ll send the rate when ready. Thanks, Pricing.";
+      body += message("Reply from Pricing", reply);
+      if (state.pricing === "incomplete") body += `<p class="notice">Rate missing for ${alternative ? "GRU → SIN" : "MEX → CDG"}. Quote approval is blocked.</p>`;
+    }
+  }
+  return section("Pricing correspondence", "Send the selected lanes and reconcile the plain-text reply.", body);
+}
+
+function quoteLaneTerms() {
+  const gruTerms = state.fragile === "offer"
+    ? "GRU → SIN · 19.1 tons · GRU → SIN · 4 days\nFragile handling unavailable. Standard handling offered at USD 2,240 per ton."
+    : "GRU → SIN · 19.1 tons · No offer. Fragile handling cannot be provided within 8 days.";
+  return `MEX → CDG · 12.3 tons · MEX → CDG · 11 days
+Dangerous-goods handling included at USD 1,840 per ton.
+
+${gruTerms}
+
+FAI → SIN · 46.1 tons · No offer. No route available.`;
+}
+
+function quoteView() {
+  if (state.pricing !== "complete") {
+    return section("Customer quote", "A customer draft becomes available when every offered lane has a validated rate.", "");
+  }
+  const draft = `Subject: Air freight proposal · RFP-1042 · v1
+Hi Maya,
+
+${quoteLaneTerms()}
+
+Please reply to confirm acceptance of the offered lanes in version 1.
+Air Freight RFP Response Team`;
+  const controls = state.sent ? badge("Quote v1 sent · simulated") :
+    `<div class="actions">${button("approve", "Approve quote v1", {primary: !state.approved, disabled: state.approved})}${button("send", "Send simulated quote", {primary: state.approved, disabled: !state.approved})}</div>`;
+  return section("Customer quote", "Review the exact email before it goes to the shipper.", message("Quote email preview", draft) + controls);
+}
+
+function closeoutView() {
+  if (!state.sent) return section("Acceptance and kickoff", "Send the approved quote to simulate a customer reply.", "");
+  let body = "";
+  if (!state.accepted) {
+    const exceptionLabel = state.fragile === "offer" ? "Simulate partial acceptance" : "Simulate counteroffer";
+    body += `<div class="actions">${button("accept", "Simulate full acceptance", {primary: true})}${button("partial", exceptionLabel, {disabled: state.reply === "review"})}</div>`;
+    if (state.reply === "review") {
+      const reply = state.fragile === "offer"
+        ? "We accept MEX to CDG only. Please leave GRU to SIN open."
+        : "We can proceed with MEX to CDG at USD 1,600 per ton. Can you revise the rate?";
+      body += message("Customer reply", reply) + '<p class="notice">Human review required. Clarify terms or reissue the quote. You can also simulate a later full acceptance.</p>';
+    }
+  } else {
+    const offered = state.fragile === "offer" ? 2 : 1;
+    body += message("Customer reply", "We accept all offered lanes and terms in quote RFP-1042 version 1.");
+    body += message("SQL proposal record · simulated",
+      `Proposal P-1042 · Accepted quote v1\n1 proposal record · 3 lane dispositions · ${offered} offered ${offered === 1 ? "lane" : "lanes"}\nDuplicate replies ignored: ${state.replays}\n\n${quoteLaneTerms()}`);
+    body += '<div class="actions">' + button("replay", "Replay acceptance reply") + '</div>';
+    if (state.kickoff === "booked") {
+      body += message("Calendar invite · simulated", "Air freight kickoff · RFP-1042\nTue, Nov 24, 2026 · 10:00–10:30 a.m. ET\nAttendees · Shipper and RFP Response Team\n1 invitation booked · CAL-1042");
+    } else if (state.kickoff === "failed") {
+      body += '<p class="notice">Calendar temporarily unavailable. The accepted proposal is recorded and the kickoff job can be retried.</p>';
+      body += '<div class="actions">' + button("book", "Retry kickoff scheduling", {primary: true}) + '</div>';
+    } else {
+      body += '<p class="muted" style="margin-top:12px">The calendar adapter has one kickoff job queued.</p>';
+      body += `<div class="actions">${button("book", "Run scheduling job", {primary: true})}${button("fail", "Simulate calendar failure")}</div>`;
+    }
+  }
+  return section("Acceptance and kickoff", "Match the customer reply to quote v1, then record the result and schedule the meeting.", body);
+}
+
+function render() {
+  const closed = [...workflow.querySelectorAll("details:not([open])")].map(detail => detail.dataset.lane || detail.querySelector("summary").textContent);
+  workflow.innerHTML = lanesView() + pricingView() + quoteView() + closeoutView();
+  for (const detail of workflow.querySelectorAll("details")) {
+    if (closed.includes(detail.dataset.lane || detail.querySelector("summary").textContent)) detail.open = false;
+  }
+  const current = state.accepted ? 4 : state.sent ? 3 : state.pricing === "complete" ? 2 :
+    state.fragile && state.unreachable ? 1 : 0;
+  progress.forEach((step, index) => {
+    const done = index < current || state.kickoff === "booked";
+    step.dataset.state = done ? "done" : index === current ? "current" : "upcoming";
+    if (!done && index === current) step.setAttribute("aria-current", "step");
+    else step.removeAttribute("aria-current");
+  });
+}
+
+const actions = {
+  offer() {
+    state.fragile = "offer";
+    addEvent("Reviewer", "Selected a disclosed alternative", "Offer GRU → SIN with standard handling and list fragile handling as unavailable.");
+  },
+  decline() {
+    state.fragile = "decline";
+    addEvent("Reviewer", "Declined GRU → SIN", "The requested fragile service cannot be provided within 8 days.");
+  },
+  "no-route"() {
+    state.unreachable = true;
+    addEvent("Reviewer", "Confirmed no offer for FAI → SIN", "The requested destination is unreachable from the origin in this inventory.");
+  },
+  request() {
+    state.pricing = "requested";
+    addEvent("Email adapter", "Sent simulated request to Pricing", state.fragile === "offer" ? "Requested two rates with the offered service scope." : "Requested a rate for the single offered lane.");
+  },
+  "rate-complete"() {
+    state.pricing = "complete";
+    addEvent("AI extraction · rate validation", "Matched all offered rates", "The mock reply matched the lane, currency, per-ton basis and offered services. Quote draft is ready.");
+  },
+  "rate-incomplete"() {
+    state.pricing = "incomplete";
+    addEvent("AI extraction · rate validation", "A rate is missing", "Wait for a complete Pricing reply before approving the quote.", "review");
+  },
+  approve() {
+    state.approved = true;
+    addEvent("Reviewer", "Approved quote v1", "The approved terms are ready to send.");
+  },
+  send() {
+    state.sent = true;
+    addEvent("Email adapter", "Sent quote v1 in the simulation", "Awaiting a customer reply linked to this quote.");
+  },
+  partial() {
+    state.reply = "review";
+    addEvent("AI reply classification", "Customer proposed different terms", "An analyst must review the reply before recording an acceptance.", "review");
+  },
+  accept() {
+    state.reply = "accepted";
+    state.accepted = true;
+    state.kickoff = "queued";
+    addEvent("Acceptance workflow", "Matched full acceptance to quote v1", "Recorded one simulated SQL proposal and queued one kickoff job.");
+  },
+  replay() {
+    state.replays += 1;
+    addEvent("Acceptance workflow", "Ignored a duplicate reply", "Kept the existing proposal and kickoff job.");
+  },
+  fail() {
+    state.kickoff = "failed";
+    addEvent("Calendar adapter", "Kickoff scheduling needs a retry", "The simulated calendar service returned a temporary failure.", "review");
+  },
+  book() {
+    state.kickoff = "booked";
+    addEvent("Calendar adapter", "Booked the simulated kickoff", "Saved one invitation for the shipper and response team.");
+  }
+};
+
+workflow.addEventListener("click", (event) => {
+  const pressed = event.target.closest("button[data-action]");
+  if (!pressed || pressed.disabled) return;
+  const area = pressed.closest("section");
+  const sectionIndex = [...workflow.children].indexOf(area);
+  actions[pressed.dataset.action]();
+  render();
+  const newArea = workflow.children[sectionIndex];
+  const next = newArea.querySelector(`button[data-action="${pressed.dataset.action}"]:enabled`) ||
+    newArea.querySelector("button:enabled") ||
+    [...workflow.querySelectorAll("button:enabled")].find(control => newArea.compareDocumentPosition(control) & Node.DOCUMENT_POSITION_FOLLOWING);
+  if (next) next.focus({preventScroll: true});
+  else {
+    const title = newArea.querySelector("h2");
+    title.tabIndex = -1;
+    title.focus({preventScroll: true});
+  }
+});
+
+function reset() {
+  state = initialState();
+  workflow.replaceChildren();
+  activity.replaceChildren();
+  events.forEach(event => addEvent(...event));
+  render();
+}
+
+document.getElementById("reset").addEventListener("click", reset);
+reset();
+</script>
+</body>
+</html>
