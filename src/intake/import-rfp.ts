@@ -32,13 +32,13 @@ export async function importRfp(db: AppDb, workbook: File, email: File | null, s
   const { lanes: laneRows, flights } = await parseWorkbook(workbookContent);
   const importedAt = new Date().toISOString();
 
-  return db.transaction((tx) => {
-    const { id: rfpId } = tx.insert(rfps).values({
+  return db.transaction(async (tx) => {
+    const { id: rfpId } = await tx.insert(rfps).values({
       title: sample ? "Sample air freight RFP" : workbook.name,
       reviewerId: demoReviewerId,
       importedAt,
     }).returning().get();
-    const { id: sourceFileId } = tx.insert(sourceFiles).values({
+    const { id: sourceFileId } = await tx.insert(sourceFiles).values({
       rfpId,
       kind: "workbook",
       name: workbook.name,
@@ -46,24 +46,24 @@ export async function importRfp(db: AppDb, workbook: File, email: File | null, s
     }).returning().get();
 
     if (email && emailSource) {
-      tx.insert(sourceFiles).values({
+      await tx.insert(sourceFiles).values({
         rfpId, kind: "shipper_email", name: email.name, content: emailSource.content, emailText: emailSource.text,
       }).run();
     }
 
-    const { id: snapshotId } = tx.insert(transitSnapshots).values({
+    const { id: snapshotId } = await tx.insert(transitSnapshots).values({
       rfpId, sourceFileId, sheetName: transitSheetName,
     }).returning().get();
 
     // Use small batches to stay within SQLite's bound-parameter limits.
     for (let i = 0; i < laneRows.length; i += 100) {
-      tx.insert(lanes).values(laneRows.slice(i, i + 100).map((row) => ({ rfpId, ...row }))).run();
+      await tx.insert(lanes).values(laneRows.slice(i, i + 100).map((row) => ({ rfpId, ...row }))).run();
     }
     for (let i = 0; i < flights.length; i += 100) {
-      tx.insert(flightLegs).values(flights.slice(i, i + 100).map((row) => ({ snapshotId, ...row }))).run();
+      await tx.insert(flightLegs).values(flights.slice(i, i + 100).map((row) => ({ snapshotId, ...row }))).run();
     }
 
-    tx.insert(activityEvents).values([
+    await tx.insert(activityEvents).values([
       {
         rfpId, stage: "Read source files", status: "complete", sourceName: workbook.name,
         target: "sources", result: email ? `Original workbook and ${email.name} stored.` : "Original workbook stored.",
@@ -82,11 +82,11 @@ export async function importRfp(db: AppDb, workbook: File, email: File | null, s
     ]).run();
 
     return rfpId;
-  });
+  }, { behavior: "immediate" });
 }
 
-export function recordImportFailure(db: AppDb, sourceName: string, error: InvalidImport) {
-  db.insert(activityEvents).values({
+export async function recordImportFailure(db: AppDb, sourceName: string, error: InvalidImport) {
+  await db.insert(activityEvents).values({
     stage: "Validate upload",
     status: "failed",
     sourceName,

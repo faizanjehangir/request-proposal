@@ -5,8 +5,8 @@ import { confirmAllCompliant, declineAllOpen, resolveEmail, runAnalysis, saveLan
 import { LaneReviewExplorer } from "./lane-review-explorer";
 import { RoutingForm } from "./routing-form";
 
-type Rfp = NonNullable<ReturnType<typeof getRfp>>;
-type RoutingReview = ReturnType<typeof getRoutingReview>;
+type Rfp = NonNullable<Awaited<ReturnType<typeof getRfp>>>;
+type RoutingReview = Awaited<ReturnType<typeof getRoutingReview>>;
 type Review = RoutingReview["reviews"][number];
 type Lane = Rfp["lanes"][number];
 

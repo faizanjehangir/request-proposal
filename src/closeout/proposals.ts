@@ -13,14 +13,14 @@ export class CloseoutError extends Error {}
 
 export const maxCustomerReplyLength = 20_000;
 
-export function recordCloseout(db: WorkflowDb, rfpId: number, stage: string, sourceName: string, result: string, nextAction: string,
+export async function recordCloseout(db: WorkflowDb, rfpId: number, stage: string, sourceName: string, result: string, nextAction: string,
   status: typeof activityEvents.$inferInsert.status = "complete") {
-  db.insert(activityEvents).values({
+  await db.insert(activityEvents).values({
     rfpId, stage, sourceName, result, nextAction, status, target: "closeout", occurredAt: new Date().toISOString(),
   }).run();
 }
 
-function sentQuotes(db: WorkflowDb, rfpId: number) {
+async function sentQuotes(db: WorkflowDb, rfpId: number) {
   return db.select({
     quote: quoteVersions, messageId: emailMessages.id, thread: emailMessages.threadKey, subject: emailMessages.subject,
   }).from(quoteVersions).innerJoin(emailMessages, and(
@@ -29,11 +29,11 @@ function sentQuotes(db: WorkflowDb, rfpId: number) {
   )).where(eq(quoteVersions.rfpId, rfpId)).orderBy(desc(quoteVersions.version)).all();
 }
 
-export function getAcceptedProposal(db: WorkflowDb, rfpId: number) {
+export async function getAcceptedProposal(db: WorkflowDb, rfpId: number) {
   return db.select().from(acceptedProposals).where(eq(acceptedProposals.rfpId, rfpId)).get();
 }
 
-function kickoffJob(db: WorkflowDb, proposalId: number) {
+async function kickoffJob(db: WorkflowDb, proposalId: number) {
   return db.select().from(outboxJobs).where(eq(outboxJobs.acceptedProposalId, proposalId)).get();
 }
 
@@ -48,9 +48,9 @@ type Incoming = {
 
 type Suggestion = Awaited<ReturnType<typeof suggestReviewIntent>>;
 
-export function receiveCustomerReply(db: AppDb, incoming: Incoming, simulateFailure = false, suggestion?: Suggestion) {
-  return db.transaction((tx) => {
-    const quotes = sentQuotes(tx, incoming.rfpId);
+export async function receiveCustomerReply(db: AppDb, incoming: Incoming, simulateFailure = false, suggestion?: Suggestion) {
+  return db.transaction(async (tx) => {
+    const quotes = await sentQuotes(tx, incoming.rfpId);
     const target = quotes.find(({ messageId }) => messageId === incoming.inReplyTo);
     if (!target || incoming.thread !== target.thread || incoming.thread !== quoteThread(incoming.rfpId)
       || incoming.sender !== target.quote.recipient) {
@@ -61,10 +61,10 @@ export function receiveCustomerReply(db: AppDb, incoming: Incoming, simulateFail
       throw new CloseoutError("Enter a customer reply up to 20,000 characters.");
     }
 
-    const existing = getAcceptedProposal(tx, incoming.rfpId);
-    const duplicate = tx.select().from(emailMessages).where(eq(emailMessages.messageKey, incoming.messageKey)).get();
+    const existing = await getAcceptedProposal(tx, incoming.rfpId);
+    const duplicate = await tx.select().from(emailMessages).where(eq(emailMessages.messageKey, incoming.messageKey)).get();
     if (duplicate) {
-      const reply = tx.select().from(customerReplies).where(eq(customerReplies.messageId, duplicate.id)).get();
+      const reply = await tx.select().from(customerReplies).where(eq(customerReplies.messageId, duplicate.id)).get();
       if (!reply || duplicate.rfpId !== incoming.rfpId || duplicate.threadKey !== incoming.thread
         || duplicate.sender !== incoming.sender || duplicate.body !== incoming.body || reply.inReplyToId !== incoming.inReplyTo) {
         throw new CloseoutError("This message reference is already used by another reply.");
@@ -83,7 +83,7 @@ export function receiveCustomerReply(db: AppDb, incoming: Incoming, simulateFail
       if (existing) {
         result = { intent: "duplicate", explanation: "An accepted proposal and its kickoff job are already recorded for this RFP." };
       } else {
-        const retired = tx.select({ id: customerReplies.messageId }).from(customerReplies).where(and(
+        const retired = await tx.select({ id: customerReplies.messageId }).from(customerReplies).where(and(
           eq(customerReplies.quoteVersionId, target.quote.id),
           or(eq(customerReplies.resolution, "rejected"), eq(customerReplies.resolution, "revise")),
         )).get();
@@ -94,33 +94,33 @@ export function receiveCustomerReply(db: AppDb, incoming: Incoming, simulateFail
     }
 
     const now = new Date().toISOString();
-    const message = tx.insert(emailMessages).values({
+    const message = await tx.insert(emailMessages).values({
       rfpId: incoming.rfpId, messageKey: incoming.messageKey, threadKey: incoming.thread,
       direction: "inbound", sender: incoming.sender, recipient: responseFrom, subject: `Re: ${target.subject}`,
       body: incoming.body, recordedAt: now,
     }).returning({ id: emailMessages.id }).get();
-    tx.insert(customerReplies).values({
+    await tx.insert(customerReplies).values({
       messageId: message.id, quoteVersionId: target.quote.id, inReplyToId: incoming.inReplyTo,
       intent: result.intent, evidence, explanation: result.explanation,
     }).run();
 
-    recordCloseout(tx, incoming.rfpId, "Classify customer reply", reference, `${replyLabels[result.intent]}. ${result.explanation}`,
+    await recordCloseout(tx, incoming.rfpId, "Classify customer reply", reference, `${replyLabels[result.intent]}. ${result.explanation}`,
       result.intent === "accepted" ? "Record the accepted terms and queue the kickoff."
         : result.intent === "duplicate" ? "Check the existing accepted proposal and kickoff."
           : "Review the customer’s original reply.",
       result.intent === "accepted" || result.intent === "duplicate" ? "complete" : "review_required");
     if (result.intent !== "accepted") return { replyId: message.id, jobId: undefined };
 
-    const proposal = tx.insert(acceptedProposals).values({
+    const proposal = await tx.insert(acceptedProposals).values({
       rfpId: incoming.rfpId, quoteVersionId: target.quote.id, replyId: message.id, acceptedAt: now, evidence,
       recipient: target.quote.recipient, subject: target.quote.subject, body: target.quote.body, lanes: target.quote.lanes,
     }).returning({ id: acceptedProposals.id }).get();
-    const job = tx.insert(outboxJobs).values({
+    const job = await tx.insert(outboxJobs).values({
       rfpId: incoming.rfpId, acceptedProposalId: proposal.id, kind: "kickoff", status: "pending",
       availableAt: now, createdAt: now, simulateFailure,
     }).returning({ id: outboxJobs.id }).get();
-    recordCloseout(tx, incoming.rfpId, "Record accepted proposal and queue kickoff", reference,
-      `Proposal P-${proposal.id} and ${target.quote.lanes.length} lane dispositions were saved in SQLite.`, "Check the simulated kickoff invitation.");
+    await recordCloseout(tx, incoming.rfpId, "Record accepted proposal and queue kickoff", reference,
+      `Proposal P-${proposal.id} and ${target.quote.lanes.length} lane dispositions were saved in the database.`, "Check the simulated kickoff invitation.");
     return { replyId: message.id, jobId: job.id };
   }, { behavior: "immediate" });
 }
@@ -129,7 +129,7 @@ export async function simulateCustomerReply(
   db: AppDb, rfpId: number, quoteId: number, previousReplyId: number, scenario: CustomerScenario,
   simulateFailure = false, text = "",
 ) {
-  const delivered = sentQuotes(db, rfpId);
+  const delivered = await sentQuotes(db, rfpId);
   if (delivered[0]?.quote.id !== quoteId) throw new CloseoutError("Refresh before choosing a delivered quote.");
   const target = scenario === "superseded" ? delivered[1] : delivered[0];
   if (!target) throw new CloseoutError("Deliver another quote version before simulating a reply to an older one.");
@@ -143,27 +143,27 @@ export async function simulateCustomerReply(
   }, simulateFailure, suggestion);
 }
 
-export function replayAcceptance(db: AppDb, rfpId: number) {
-  const proposal = getAcceptedProposal(db, rfpId);
+export async function replayAcceptance(db: AppDb, rfpId: number) {
+  const proposal = await getAcceptedProposal(db, rfpId);
   if (!proposal) throw new CloseoutError("There is no recorded acceptance to replay.");
-  const row = db.select({ email: emailMessages, reply: customerReplies }).from(emailMessages)
+  const row = await db.select({ email: emailMessages, reply: customerReplies }).from(emailMessages)
     .innerJoin(customerReplies, eq(customerReplies.messageId, emailMessages.id))
     .where(eq(emailMessages.id, proposal.replyId)).get();
   if (!row) throw new CloseoutError("The original acceptance email is unavailable.");
-  receiveCustomerReply(db, {
+  await receiveCustomerReply(db, {
     rfpId, inReplyTo: row.reply.inReplyToId, thread: row.email.threadKey, sender: row.email.sender,
     body: row.email.body, messageKey: row.email.messageKey,
   });
-  recordCloseout(db, rfpId, "Replay existing acceptance", `P-${proposal.id}`,
+  await recordCloseout(db, rfpId, "Replay existing acceptance", `P-${proposal.id}`,
     "The original customer message was already processed.", "Use the existing proposal and kickoff invitation.");
 }
 
-export function resolveCustomerReply(db: AppDb, rfpId: number, replyId: number, resolution: ResponseAction, text: string) {
+export async function resolveCustomerReply(db: AppDb, rfpId: number, replyId: number, resolution: ResponseAction, text: string) {
   const note = text.trim();
   if (!note || note.length > 2000) throw new CloseoutError("Enter an explanation or clarification up to 2,000 characters.");
-  db.transaction((tx) => {
-    if (getAcceptedProposal(tx, rfpId)) throw new CloseoutError("This RFP already has a recorded acceptance.");
-    const row = tx.select({ reply: customerReplies, email: emailMessages, version: quoteVersions.version }).from(customerReplies)
+  await db.transaction(async (tx) => {
+    if (await getAcceptedProposal(tx, rfpId)) throw new CloseoutError("This RFP already has a recorded acceptance.");
+    const row = await tx.select({ reply: customerReplies, email: emailMessages, version: quoteVersions.version }).from(customerReplies)
       .innerJoin(emailMessages, eq(customerReplies.messageId, emailMessages.id))
       .innerJoin(quoteVersions, eq(customerReplies.quoteVersionId, quoteVersions.id))
       .where(and(eq(customerReplies.messageId, replyId), eq(emailMessages.rfpId, rfpId))).get();
@@ -173,31 +173,31 @@ export function resolveCustomerReply(db: AppDb, rfpId: number, replyId: number, 
     if (row.reply.resolution) throw new CloseoutError("This reply already has a review decision.");
     const now = new Date().toISOString();
     if (resolution === "clarified") {
-      writeSimulatedEmail(tx, {
+      await writeSimulatedEmail(tx, {
         rfpId, threadKey: row.email.threadKey, messageKey: `customer-clarification:${replyId}`, direction: "outbound",
         sender: responseFrom, recipient: row.email.sender, subject: row.email.subject, body: note, recordedAt: now,
       });
     }
-    tx.update(customerReplies).set({
+    await tx.update(customerReplies).set({
       resolution, resolutionNote: note, reviewedAt: now, reviewerId: demoReviewerId,
     }).where(eq(customerReplies.messageId, replyId)).run();
-    recordCloseout(tx, rfpId, reviewLabels[resolution], quoteReference(rfpId, row.version), note,
+    await recordCloseout(tx, rfpId, reviewLabels[resolution], quoteReference(rfpId, row.version), note,
       resolution === "revise" ? "Update the quote, approve a new version, and deliver it to the customer."
         : resolution === "clarified" ? "Wait for the simulated customer’s response." : "Review whether a revised proposal is needed.");
   }, { behavior: "immediate" });
 }
 
-export function getCloseoutWorkspace(db: AppDb, rfpId: number) {
-  const delivered = sentQuotes(db, rfpId);
-  const proposal = getAcceptedProposal(db, rfpId);
-  const replies = db.select({ reply: customerReplies, message: emailMessages, version: quoteVersions.version })
+export async function getCloseoutWorkspace(db: AppDb, rfpId: number) {
+  const delivered = await sentQuotes(db, rfpId);
+  const proposal = await getAcceptedProposal(db, rfpId);
+  const replies = await db.select({ reply: customerReplies, message: emailMessages, version: quoteVersions.version })
     .from(customerReplies).innerJoin(emailMessages, eq(customerReplies.messageId, emailMessages.id))
     .innerJoin(quoteVersions, eq(customerReplies.quoteVersionId, quoteVersions.id))
     .where(eq(emailMessages.rfpId, rfpId)).orderBy(desc(emailMessages.id)).all();
-  const clarifications = db.select().from(emailMessages).where(and(
+  const clarifications = await db.select().from(emailMessages).where(and(
     eq(emailMessages.rfpId, rfpId), like(emailMessages.messageKey, "customer-clarification:%"),
   )).orderBy(desc(emailMessages.id)).all();
-  const invite = proposal ? db.select().from(kickoffInvites).where(eq(kickoffInvites.proposalId, proposal.id)).get() : undefined;
-  const job = proposal ? kickoffJob(db, proposal.id) : undefined;
+  const invite = proposal ? await db.select().from(kickoffInvites).where(eq(kickoffInvites.proposalId, proposal.id)).get() : undefined;
+  const job = proposal ? await kickoffJob(db, proposal.id) : undefined;
   return { delivered, replies, clarifications, proposal, invite, job };
 }

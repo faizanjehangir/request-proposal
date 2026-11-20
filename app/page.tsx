@@ -6,9 +6,9 @@ import ImportForm from "./components/import-form";
 
 export const dynamic = "force-dynamic";
 
-export default function Home() {
-  const imports = listRfps();
-  const activity = recentImportActivity();
+export default async function Home() {
+  const imports = await listRfps();
+  const activity = await recentImportActivity();
 
   return (
     <>

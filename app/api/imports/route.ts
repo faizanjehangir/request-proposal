@@ -44,7 +44,7 @@ function formFile(form: FormData, field: string, source: string) {
 }
 
 export async function POST(request: Request) {
-  const db = getDb();
+  const db = await getDb();
   let sourceName = "Workbook upload";
   try {
     const form = await readForm(request);
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
     return Response.json({ id }, { status: 201 });
   } catch (error) {
     if (error instanceof InvalidImport) {
-      recordImportFailure(db, sourceName, error);
+      await recordImportFailure(db, sourceName, error);
       return Response.json({ message: error.message, issues: error.issues }, { status: 422 });
     }
 

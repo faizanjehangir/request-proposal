@@ -33,11 +33,11 @@ export function kickoffSlot(now: Date, timezone = process.env.RFP_KICKOFF_TIMEZO
   return { startAt: start.toISOString(), endAt: new Date(start.getTime() + 30 * 60_000).toISOString(), timezone };
 }
 
-export function bookKickoff(db: AppDb, job: ClaimedJob, now = new Date()) {
-  db.transaction((tx) => {
-    if (job.kind !== "kickoff" || !ownsJobLease(tx, job)) return;
+export async function bookKickoff(db: AppDb, job: ClaimedJob, now = new Date()) {
+  await db.transaction(async (tx) => {
+    if (job.kind !== "kickoff" || !await ownsJobLease(tx, job)) return;
     if (job.acceptedProposalId === null) throw new Error("Kickoff job has no accepted proposal.");
-    const entry = tx.select({ proposal: acceptedProposals, version: quoteVersions.version }).from(acceptedProposals)
+    const entry = await tx.select({ proposal: acceptedProposals, version: quoteVersions.version }).from(acceptedProposals)
       .innerJoin(quoteVersions, eq(quoteVersions.id, acceptedProposals.quoteVersionId))
       .where(eq(acceptedProposals.id, job.acceptedProposalId)).get();
     if (!entry || entry.proposal.rfpId !== job.rfpId) throw new Error("Kickoff proposal is missing.");
@@ -45,27 +45,27 @@ export function bookKickoff(db: AppDb, job: ClaimedJob, now = new Date()) {
     if (job.simulateFailure) throw new SimulatedDeliveryFailure("Simulated calendar temporarily unavailable.");
     const { proposal, version } = entry;
     const providerId = `CAL-${proposal.id}`;
-    tx.insert(kickoffInvites).values({
+    await tx.insert(kickoffInvites).values({
       proposalId: proposal.id, providerId, title: `Air freight kickoff · ${quoteReference(job.rfpId, version)}`,
       ...kickoffSlot(now), attendees: [proposal.recipient, responseFrom], bookedAt: now.toISOString(),
     }).onConflictDoNothing({ target: kickoffInvites.proposalId }).run();
-    finishJob(tx, job, "complete", now);
-    recordCloseout(tx, job.rfpId, "Book simulated kickoff", providerId,
+    await finishJob(tx, job, "complete", now);
+    await recordCloseout(tx, job.rfpId, "Book simulated kickoff", providerId,
       "Saved one simulated invitation for the shipper and RFP Response Team.", "Open the kickoff details.");
   }, { behavior: "immediate" });
 }
 
-export function processKickoff(db: AppDb, jobId?: number, now = new Date()) {
+export async function processKickoff(db: AppDb, jobId?: number, now = new Date()) {
   return processJob(db, "kickoff", bookKickoff, jobId, now);
 }
 
-export function retryKickoff(db: AppDb, rfpId: number) {
-  return db.transaction((tx) => {
-    const proposal = getAcceptedProposal(tx, rfpId);
+export async function retryKickoff(db: AppDb, rfpId: number) {
+  return db.transaction(async (tx) => {
+    const proposal = await getAcceptedProposal(tx, rfpId);
     if (!proposal) return undefined;
-    const job = tx.select().from(outboxJobs).where(eq(outboxJobs.acceptedProposalId, proposal.id)).get();
+    const job = await tx.select().from(outboxJobs).where(eq(outboxJobs.acceptedProposalId, proposal.id)).get();
     if (!job || job.status === "complete" || job.status === "canceled") return undefined;
-    resetFailedJob(tx, job);
+    await resetFailedJob(tx, job);
     return job.id;
   }, { behavior: "immediate" });
 }

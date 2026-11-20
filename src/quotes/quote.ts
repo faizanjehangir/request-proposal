@@ -9,16 +9,16 @@ import { pricingHash, pricingScope } from "../pricing/requests";
 import { getRoutingReview } from "../routing/review";
 import { customerMailbox, defaultQuoteWording, describeServices, quoteReference, quoteThread, type QuoteLane, type QuoteWording } from "./contracts";
 
-type Rfp = NonNullable<ReturnType<typeof getRfp>>;
-type Routing = ReturnType<typeof getRoutingReview>;
-type Pricing = ReturnType<typeof getPricingState>;
+type Rfp = NonNullable<Awaited<ReturnType<typeof getRfp>>>;
+type Routing = Awaited<ReturnType<typeof getRoutingReview>>;
+type Pricing = Awaited<ReturnType<typeof getPricingState>>;
 export type QuoteVersion = typeof quoteVersions.$inferSelect;
 
 export class QuoteError extends Error {}
 
-export function recordQuote(db: WorkflowDb, rfpId: number, version: number, stage: string, result: string, nextAction: string,
+export async function recordQuote(db: WorkflowDb, rfpId: number, version: number, stage: string, result: string, nextAction: string,
   status: typeof activityEvents.$inferInsert.status = "complete") {
-  db.insert(activityEvents).values({
+  await db.insert(activityEvents).values({
     rfpId, stage, sourceName: quoteReference(rfpId, version), result, nextAction, status, target: "quote",
     occurredAt: new Date().toISOString(),
   }).run();
@@ -52,19 +52,19 @@ export function quoteTerms(rfp: Rfp, routing: Routing, pricing: Pricing) {
   return { lanes, termsHash: pricingHash(JSON.stringify(lanes)), pricingReplyId: pricing.reply.messageId };
 }
 
-export function currentQuoteTerms(db: WorkflowDb, rfpId: number) {
-  const rfp = getRfp(rfpId, db);
+export async function currentQuoteTerms(db: WorkflowDb, rfpId: number) {
+  const rfp = await getRfp(rfpId, db);
   if (!rfp) throw new QuoteError("This RFP could not be found.");
-  const routing = getRoutingReview(db, rfp);
-  return quoteTerms(rfp, routing, getPricingState(db, rfpId, pricingScope(rfp, routing)));
+  const routing = await getRoutingReview(db, rfp);
+  return quoteTerms(rfp, routing, await getPricingState(db, rfpId, pricingScope(rfp, routing)));
 }
 
-export function latestQuote(db: WorkflowDb, rfpId: number) {
+export async function latestQuote(db: WorkflowDb, rfpId: number) {
   return db.select().from(quoteVersions).where(eq(quoteVersions.rfpId, rfpId))
     .orderBy(desc(quoteVersions.version)).limit(1).get();
 }
 
-export function quoteApproval(db: WorkflowDb, quoteId: number) {
+export async function quoteApproval(db: WorkflowDb, quoteId: number) {
   return db.select({ reviewer: reviewers.name, approvedAt: quoteApprovals.approvedAt })
     .from(quoteApprovals).innerJoin(reviewers, eq(reviewers.id, quoteApprovals.reviewerId))
     .where(eq(quoteApprovals.quoteVersionId, quoteId)).get();
@@ -75,8 +75,8 @@ export function quoteMessageKey(versionId: number) {
   return `${quoteMessagePrefix}${versionId}`;
 }
 
-function quoteClosed(db: WorkflowDb, rfpId: number) {
-  return Boolean(db.select({ id: acceptedProposals.id }).from(acceptedProposals).where(eq(acceptedProposals.rfpId, rfpId)).get());
+async function quoteClosed(db: WorkflowDb, rfpId: number) {
+  return Boolean(await db.select({ id: acceptedProposals.id }).from(acceptedProposals).where(eq(acceptedProposals.rfpId, rfpId)).get());
 }
 
 function renderQuote(rfpId: number, version: number, lanes: QuoteLane[], wording: QuoteWording) {
@@ -95,12 +95,12 @@ function renderQuote(rfpId: number, version: number, lanes: QuoteLane[], wording
   return { subject, body: [wording.opening, ...terms, wording.closing].join("\n\n") };
 }
 
-export function createQuoteDraft(db: AppDb, rfpId: number, expectedId: number | null, wording?: QuoteWording) {
-  return db.transaction((tx) => {
-    if (quoteClosed(tx, rfpId)) throw new QuoteError("This proposal is already accepted.");
-    const terms = currentQuoteTerms(tx, rfpId);
+export async function createQuoteDraft(db: AppDb, rfpId: number, expectedId: number | null, wording?: QuoteWording) {
+  return db.transaction(async (tx) => {
+    if (await quoteClosed(tx, rfpId)) throw new QuoteError("This proposal is already accepted.");
+    const terms = await currentQuoteTerms(tx, rfpId);
     if (!terms) throw new QuoteError("Finish routing and reconcile rates for all offers before drafting the quote.");
-    const previous = latestQuote(tx, rfpId);
+    const previous = await latestQuote(tx, rfpId);
     if ((previous?.id ?? null) !== expectedId) {
       throw new QuoteError("A newer quote version exists. Review it before drafting again.");
     }
@@ -111,46 +111,46 @@ export function createQuoteDraft(db: AppDb, rfpId: number, expectedId: number | 
 
     const version = (previous?.version ?? 0) + 1;
     const { subject, body } = renderQuote(rfpId, version, terms.lanes, copy);
-    const row = tx.insert(quoteVersions).values({
+    const row = await tx.insert(quoteVersions).values({
       rfpId, version, ...terms, wording: copy, recipient: customerMailbox, subject, body, createdAt: new Date().toISOString(),
     }).returning({ id: quoteVersions.id }).get();
-    recordQuote(tx, rfpId, version, "Create customer quote draft",
+    await recordQuote(tx, rfpId, version, "Create customer quote draft",
       `Saved exact email text and terms for all ${terms.lanes.length} requested lanes.`, "Review and approve this version.");
     return row.id;
   }, { behavior: "immediate" });
 }
 
-export function requireCurrentQuote(db: WorkflowDb, rfpId: number, quoteId: number) {
-  if (quoteClosed(db, rfpId)) throw new QuoteError("This proposal is already accepted.");
-  const quote = latestQuote(db, rfpId);
+export async function requireCurrentQuote(db: WorkflowDb, rfpId: number, quoteId: number) {
+  if (await quoteClosed(db, rfpId)) throw new QuoteError("This proposal is already accepted.");
+  const quote = await latestQuote(db, rfpId);
   if (quote?.id !== quoteId) throw new QuoteError("This quote version was superseded. Review the latest version.");
-  if (currentQuoteTerms(db, rfpId)?.termsHash !== quote.termsHash) {
+  if ((await currentQuoteTerms(db, rfpId))?.termsHash !== quote.termsHash) {
     throw new QuoteError("The quote terms are out of date. Resolve routing or Pricing changes and create an updated draft.");
   }
   return quote;
 }
 
-export function approveQuote(db: AppDb, rfpId: number, quoteId: number) {
-  db.transaction((tx) => {
-    const quote = requireCurrentQuote(tx, rfpId, quoteId);
-    const result = tx.insert(quoteApprovals).values({
+export async function approveQuote(db: AppDb, rfpId: number, quoteId: number) {
+  await db.transaction(async (tx) => {
+    const quote = await requireCurrentQuote(tx, rfpId, quoteId);
+    const result = await tx.insert(quoteApprovals).values({
       quoteVersionId: quote.id, reviewerId: demoReviewerId, approvedAt: new Date().toISOString(),
     }).onConflictDoNothing({ target: quoteApprovals.quoteVersionId }).run();
-    if (result.changes) recordQuote(tx, rfpId, quote.version, "Approve customer quote",
+    if (Number(result.rowsAffected)) await recordQuote(tx, rfpId, quote.version, "Approve customer quote",
       "Demo reviewer approved the exact subject, recipient and email content.", "Send the approved version to the simulated customer inbox.");
   }, { behavior: "immediate" });
 }
 
-export function getQuoteWorkspace(db: AppDb, rfp: Rfp, routing: Routing, pricing: Pricing) {
-  const versions = db.select().from(quoteVersions).where(eq(quoteVersions.rfpId, rfp.id))
+export async function getQuoteWorkspace(db: AppDb, rfp: Rfp, routing: Routing, pricing: Pricing) {
+  const versions = await db.select().from(quoteVersions).where(eq(quoteVersions.rfpId, rfp.id))
     .orderBy(desc(quoteVersions.version)).all();
   const current = versions[0];
-  const approved = current ? quoteApproval(db, current.id) : undefined;
-  const job = current ? db.select().from(outboxJobs).where(eq(outboxJobs.quoteVersionId, current.id)).get() : undefined;
-  const messages = db.select().from(emailMessages).where(and(
+  const approved = current ? await quoteApproval(db, current.id) : undefined;
+  const job = current ? await db.select().from(outboxJobs).where(eq(outboxJobs.quoteVersionId, current.id)).get() : undefined;
+  const messages = await db.select().from(emailMessages).where(and(
     eq(emailMessages.rfpId, rfp.id), eq(emailMessages.threadKey, quoteThread(rfp.id)), eq(emailMessages.direction, "outbound"), like(emailMessages.messageKey, `${quoteMessagePrefix}%`),
   )).orderBy(desc(emailMessages.id)).all();
   const terms = quoteTerms(rfp, routing, pricing);
   const stale = Boolean(current && terms?.termsHash !== current.termsHash);
-  return { versions, current, approved, job, messages, ready: Boolean(terms), stale, closed: quoteClosed(db, rfp.id) };
+  return { versions, current, approved, job, messages, ready: Boolean(terms), stale, closed: await quoteClosed(db, rfp.id) };
 }

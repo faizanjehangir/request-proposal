@@ -9,7 +9,7 @@ import { CloseoutError, maxCustomerReplyLength, replayAcceptance, resolveCustome
 
 type ActionState = { error: string | null };
 
-async function perform(rfpId: number, operation: () => void | Promise<void>): Promise<ActionState> {
+async function perform(rfpId: number, operation: () => unknown): Promise<ActionState> {
   try {
     await operation();
     revalidatePath(`/rfps/${rfpId}`);
@@ -27,27 +27,27 @@ export async function sendCustomerReply(
   rfpId: number, quoteId: number, previousReplyId: number, scenario: CustomerScenario, _state: ActionState, form: FormData,
 ) {
   return perform(rfpId, async () => {
-    const db = getDb();
+    const db = await getDb();
     const parsed = customerScenario.parse(scenario);
     const body = parsed === "custom" ? z.string().max(maxCustomerReplyLength).parse(form.get("body")) : undefined;
     const result = await simulateCustomerReply(db, rfpId, quoteId, previousReplyId, parsed, form.get("simulateFailure") === "on", body);
-    if (result.jobId !== undefined) processKickoff(db, result.jobId);
+    if (result.jobId !== undefined) await processKickoff(db, result.jobId);
   });
 }
 
 export async function saveReplyReview(rfpId: number, replyId: number, _state: ActionState, form: FormData) {
-  return perform(rfpId, () => resolveCustomerReply(getDb(), rfpId, replyId,
+  return perform(rfpId, async () => resolveCustomerReply(await getDb(), rfpId, replyId,
     responseAction.parse(form.get("resolution")), z.string().max(2000).parse(form.get("note"))));
 }
 
 export async function replayCustomerAcceptance(rfpId: number, _state: ActionState, _form: FormData) {
-  return perform(rfpId, () => replayAcceptance(getDb(), rfpId));
+  return perform(rfpId, async () => replayAcceptance(await getDb(), rfpId));
 }
 
 export async function retryCalendar(rfpId: number, _state: ActionState, _form: FormData) {
-  return perform(rfpId, () => {
-    const db = getDb();
-    const jobId = retryKickoff(db, rfpId);
-    if (jobId !== undefined) processKickoff(db, jobId);
+  return perform(rfpId, async () => {
+    const db = await getDb();
+    const jobId = await retryKickoff(db, rfpId);
+    if (jobId !== undefined) await processKickoff(db, jobId);
   });
 }

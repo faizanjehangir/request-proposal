@@ -6,7 +6,7 @@ import {
 } from "./quote-actions";
 import { RoutingForm } from "./routing-form";
 
-type Workspace = ReturnType<typeof getQuoteWorkspace>;
+type Workspace = Awaited<ReturnType<typeof getQuoteWorkspace>>;
 type Message = { recipient: string; subject: string; body: string };
 
 function EmailPreview({ message, label }: { message: Message; label: string }) {

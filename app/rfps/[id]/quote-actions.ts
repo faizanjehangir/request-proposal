@@ -9,7 +9,7 @@ import { draftQuoteWording, quoteWordingSchema } from "@/src/quotes/wording";
 
 type ActionState = { error: string | null };
 
-async function perform(rfpId: number, operation: () => void | Promise<void>): Promise<ActionState> {
+async function perform(rfpId: number, operation: () => unknown): Promise<ActionState> {
   try {
     await operation();
     revalidatePath(`/rfps/${rfpId}`);
@@ -24,39 +24,39 @@ async function perform(rfpId: number, operation: () => void | Promise<void>): Pr
 }
 
 export async function generateQuote(rfpId: number, expectedId: number | null, _state: ActionState, _form: FormData) {
-  return perform(rfpId, () => { createQuoteDraft(getDb(), rfpId, expectedId); });
+  return perform(rfpId, async () => { await createQuoteDraft(await getDb(), rfpId, expectedId); });
 }
 
 export async function saveQuoteWording(rfpId: number, quoteId: number, _state: ActionState, form: FormData) {
-  return perform(rfpId, () => {
+  return perform(rfpId, async () => {
     const wording = quoteWordingSchema.parse({ opening: form.get("opening"), closing: form.get("closing") });
-    createQuoteDraft(getDb(), rfpId, quoteId, wording);
+    await createQuoteDraft(await getDb(), rfpId, quoteId, wording);
   });
 }
 
 export async function generateAiQuote(rfpId: number, expectedId: number | null, _state: ActionState, _form: FormData) {
   return perform(rfpId, async () => {
-    const db = getDb();
-    if (!currentQuoteTerms(db, rfpId)) throw new QuoteError("Finish routing and reconcile rates for all offers before drafting the quote.");
-    createQuoteDraft(db, rfpId, expectedId, await draftQuoteWording());
+    const db = await getDb();
+    if (!await currentQuoteTerms(db, rfpId)) throw new QuoteError("Finish routing and reconcile rates for all offers before drafting the quote.");
+    await createQuoteDraft(db, rfpId, expectedId, await draftQuoteWording());
   });
 }
 
 export async function approveCustomerQuote(rfpId: number, quoteId: number, _state: ActionState, _form: FormData) {
-  return perform(rfpId, () => approveQuote(getDb(), rfpId, quoteId));
+  return perform(rfpId, async () => approveQuote(await getDb(), rfpId, quoteId));
 }
 
 export async function sendCustomerQuote(rfpId: number, quoteId: number, _state: ActionState, form: FormData) {
-  return perform(rfpId, () => {
-    const db = getDb();
-    processQuoteEmail(db, requestQuoteDelivery(db, rfpId, quoteId, form.get("simulateFailure") === "on"));
+  return perform(rfpId, async () => {
+    const db = await getDb();
+    await processQuoteEmail(db, await requestQuoteDelivery(db, rfpId, quoteId, form.get("simulateFailure") === "on"));
   });
 }
 
 export async function retryCustomerQuote(rfpId: number, quoteId: number, _state: ActionState, _form: FormData) {
-  return perform(rfpId, () => {
-    const db = getDb();
-    const job = retryQuoteDelivery(db, rfpId, quoteId);
-    if (job !== undefined) processQuoteEmail(db, job);
+  return perform(rfpId, async () => {
+    const db = await getDb();
+    const job = await retryQuoteDelivery(db, rfpId, quoteId);
+    if (job !== undefined) await processQuoteEmail(db, job);
   });
 }

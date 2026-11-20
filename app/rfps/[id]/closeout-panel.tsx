@@ -6,7 +6,7 @@ import { formatDate } from "../../components/dates";
 import { replayCustomerAcceptance, retryCalendar, saveReplyReview, sendCustomerReply } from "./closeout-actions";
 import { RoutingForm } from "./routing-form";
 
-type Workspace = ReturnType<typeof getCloseoutWorkspace>;
+type Workspace = Awaited<ReturnType<typeof getCloseoutWorkspace>>;
 type Reply = Workspace["replies"][number];
 type Proposal = NonNullable<Workspace["proposal"]>;
 

@@ -10,7 +10,7 @@ import { PricingError, requestPricing } from "@/src/pricing/requests";
 
 type ActionState = { error: string | null };
 
-async function perform(rfpId: number, operation: () => void | Promise<void>): Promise<ActionState> {
+async function perform(rfpId: number, operation: () => unknown): Promise<ActionState> {
   try {
     await operation();
     revalidatePath(`/rfps/${rfpId}`);
@@ -25,18 +25,18 @@ async function perform(rfpId: number, operation: () => void | Promise<void>): Pr
 }
 
 export async function sendRateRequest(rfpId: number, previousRequestId: number | null, _state: ActionState, _form: FormData) {
-  return perform(rfpId, () => {
-    const db = getDb();
-    const jobId = requestPricing(db, rfpId, previousRequestId);
-    if (jobId !== null) processPricingEmail(db, jobId);
+  return perform(rfpId, async () => {
+    const db = await getDb();
+    const jobId = await requestPricing(db, rfpId, previousRequestId);
+    if (jobId !== null) await processPricingEmail(db, jobId);
   });
 }
 
 export async function retryRateRequest(rfpId: number, requestId: number, _state: ActionState, _form: FormData) {
-  return perform(rfpId, () => {
-    const db = getDb();
-    const jobId = retryPricingEmail(db, rfpId, requestId);
-    if (jobId !== undefined) processPricingEmail(db, jobId);
+  return perform(rfpId, async () => {
+    const db = await getDb();
+    const jobId = await retryPricingEmail(db, rfpId, requestId);
+    if (jobId !== undefined) await processPricingEmail(db, jobId);
   });
 }
 
@@ -46,6 +46,6 @@ export async function sendPricingReply(
   return perform(rfpId, async () => {
     const parsed = z.enum(replyScenarios).parse(scenario);
     const body = parsed === "corrected" ? z.string().max(maxPricingReplyLength).parse(form.get("body")) : undefined;
-    await simulatePricingReply(getDb(), rfpId, requestId, previousReplyId, parsed, body);
+    await simulatePricingReply(await getDb(), rfpId, requestId, previousReplyId, parsed, body);
   });
 }

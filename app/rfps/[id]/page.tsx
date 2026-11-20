@@ -20,13 +20,13 @@ export default async function RfpDetail({ params }: { params: Promise<{ id: stri
   const { id } = await params;
   const rfpId = Number(id);
   if (!/^[1-9]\d*$/.test(id) || !Number.isSafeInteger(rfpId)) notFound();
-  const db = getDb();
-  const rfp = getRfp(rfpId, db);
+  const db = await getDb();
+  const rfp = await getRfp(rfpId, db);
   if (!rfp) notFound();
-  const routing = getRoutingReview(db, rfp);
-  const pricing = getPricingWorkspace(db, rfpId, pricingScope(rfp, routing));
-  const quote = getQuoteWorkspace(db, rfp, routing, pricing);
-  const closeout = getCloseoutWorkspace(db, rfpId);
+  const routing = await getRoutingReview(db, rfp);
+  const pricing = await getPricingWorkspace(db, rfpId, pricingScope(rfp, routing));
+  const quote = await getQuoteWorkspace(db, rfp, routing, pricing);
+  const closeout = await getCloseoutWorkspace(db, rfpId);
 
   return (
     <>

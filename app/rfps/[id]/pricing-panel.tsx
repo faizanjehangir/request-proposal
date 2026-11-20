@@ -6,7 +6,7 @@ import { formatDate } from "../../components/dates";
 import { retryRateRequest, sendPricingReply, sendRateRequest } from "./pricing-actions";
 import { RoutingForm } from "./routing-form";
 
-type Workspace = ReturnType<typeof getPricingWorkspace>;
+type Workspace = Awaited<ReturnType<typeof getPricingWorkspace>>;
 type Thread = Workspace["threads"][number];
 
 function Correspondence({ thread }: { thread: Thread }) {

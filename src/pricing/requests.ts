@@ -24,18 +24,18 @@ export function pricingHash(value: string) {
   return createHash("sha256").update(value).digest("hex");
 }
 
-export function recordPricing(
+export async function recordPricing(
   db: PricingDb, rfpId: number, stage: string, sourceName: string,
   result: string, nextAction: string, status: typeof activityEvents.$inferInsert.status = "complete",
 ) {
-  db.insert(activityEvents).values({
+  await db.insert(activityEvents).values({
     rfpId, stage, sourceName, result, nextAction, status, target: "pricing", occurredAt: new Date().toISOString(),
   }).run();
 }
 
 export function pricingScope(
-  rfp: NonNullable<ReturnType<typeof getRfp>>,
-  routing: ReturnType<typeof getRoutingReview>,
+  rfp: NonNullable<Awaited<ReturnType<typeof getRfp>>>,
+  routing: Awaited<ReturnType<typeof getRoutingReview>>,
 ) {
   const reviews = new Map(routing.reviews.map((review) => [review.laneId, review]));
   const scope = rfp.lanes.flatMap((lane): PricingScope[] => {
@@ -64,34 +64,34 @@ export function comparePricingScope(requested: PricingScope[], current: PricingS
   return { stale, additionalOffers };
 }
 
-export function readPricingScope(db: PricingDb, rfpId: number) {
-  const rfp = getRfp(rfpId, db);
+export async function readPricingScope(db: PricingDb, rfpId: number) {
+  const rfp = await getRfp(rfpId, db);
   if (!rfp) throw new PricingError("This RFP could not be found.");
-  return pricingScope(rfp, getRoutingReview(db, rfp));
+  return pricingScope(rfp, await getRoutingReview(db, rfp));
 }
 
-export function latestPricingRequest(db: PricingDb, rfpId: number) {
+export async function latestPricingRequest(db: PricingDb, rfpId: number) {
   return db.select().from(pricingRequests).where(eq(pricingRequests.rfpId, rfpId)).orderBy(desc(pricingRequests.id)).get();
 }
 
-export function requestPricing(db: AppDb, rfpId: number, previousId: number | null) {
-  return db.transaction((tx) => {
-    const { scope, scopeHash, blockedReason } = readPricingScope(tx, rfpId);
+export async function requestPricing(db: AppDb, rfpId: number, previousId: number | null) {
+  return db.transaction(async (tx) => {
+    const { scope, scopeHash, blockedReason } = await readPricingScope(tx, rfpId);
     if (blockedReason) throw new PricingError(blockedReason);
-    const latest = latestPricingRequest(tx, rfpId);
+    const latest = await latestPricingRequest(tx, rfpId);
     if ((latest?.id ?? null) !== previousId) return null;
 
     if (latest?.scopeHash === scopeHash) {
-      const existing = tx.select().from(outboxJobs).where(eq(outboxJobs.pricingRequestId, latest.id)).get();
+      const existing = await tx.select().from(outboxJobs).where(eq(outboxJobs.pricingRequestId, latest.id)).get();
       if (existing?.status === "pending" || existing?.status === "running") return existing.id;
     }
 
     const now = new Date().toISOString();
-    const request = tx.insert(pricingRequests).values({ rfpId, scope, scopeHash, createdAt: now }).returning({ id: pricingRequests.id }).get();
-    const job = tx.insert(outboxJobs).values({
+    const request = await tx.insert(pricingRequests).values({ rfpId, scope, scopeHash, createdAt: now }).returning({ id: pricingRequests.id }).get();
+    const job = await tx.insert(outboxJobs).values({
       rfpId, pricingRequestId: request.id, kind: "pricing_email", status: "pending", availableAt: now, createdAt: now,
     }).returning({ id: outboxJobs.id }).get();
-    recordPricing(tx, rfpId, "Queue Pricing request", pricingReference(request.id),
+    await recordPricing(tx, rfpId, "Queue Pricing request", pricingReference(request.id),
       `${scope.length} offered ${scope.length === 1 ? "lane" : "lanes"} queued for simulated delivery.`, "Wait for the Pricing email to be recorded.");
     return job.id;
   }, { behavior: "immediate" });

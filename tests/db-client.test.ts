@@ -24,17 +24,18 @@ test("applies a newly available migration without restarting the development pro
 
     process.chdir(directory);
     Object.assign(process.env, { NODE_ENV: "development", RFP_DB_PATH: join(directory, "rfp.sqlite") });
-    before = getDb();
-    const hasAcceptedProposalColumn = (db: AppDb) => db.$client.prepare(
-      "select 1 from pragma_table_info('outbox_jobs') where name = ?",
-    ).get("acceptedProposalId");
-    assert.equal(hasAcceptedProposalColumn(before), undefined);
+    before = await getDb();
+    const hasAcceptedProposalColumn = async (db: AppDb) => (await db.$client.execute({
+      sql: "select 1 from pragma_table_info('outbox_jobs') where name = ?",
+      args: ["acceptedProposalId"],
+    })).rows[0];
+    assert.equal(await hasAcceptedProposalColumn(before!), undefined);
 
     await writeFile(journalPath, JSON.stringify({ ...journal, entries: journal.entries.slice(0, phase5 + 1) }));
     await utimes(journalPath, 2000, 2000);
-    after = getDb();
+    after = await getDb();
     assert.notEqual(after, before);
-    assert.ok(hasAcceptedProposalColumn(after));
+    assert.ok(await hasAcceptedProposalColumn(after!));
   } finally {
     if (after && after !== before) after.$client.close();
     before?.$client.close();
