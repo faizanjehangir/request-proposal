@@ -17,7 +17,7 @@ The default database is `.data/rfp.sqlite`. For a separate run, set `RFP_DB_PATH
 
 ## Run the exercise
 
-1. **Import.** Confirm the RFP has 100 shipper lanes and 100 flight legs. In **Routing review**, click **Extract requirements and find routes**. Use **Find a lane** and **Disposition filter** to work through individual decisions.
+1. **Import.** Confirm the RFP has 100 shipper lanes and 100 flight legs. In **Routing review**, click **Extract requirements and find routes**. Use **Find a lane** and **Filter by decision** to work through individual decisions.
 2. **Decide what to offer.** Find **MEX → CDG**, expand the lane, and save **Compliant offer**. Find **GRU → SIN** and save **Offer with disclosed gap** with a reason explaining that fragile handling is unavailable. Find **FAI → SIN** to inspect the unreachable outcome. You can save its no-offer reason individually or include it in the bulk step.
 3. **Request early rates.** Open **Pricing** and click **Send simulated Pricing email**. Pricing should list only the two offered lanes. Click **Simulate incomplete reply**. Compare the original reply with the table and find the missing GRU → SIN rate. Click **Simulate complete reply**. The two rates match while quote drafting waits for the other lane dispositions.
 4. **Finish routing review.** If you are following the two-lane exercise, open **Mark remaining lanes as no offer** and enter a shared reason such as “No offer on this lane under the exercise proposal.” This applies to all open lanes, including any compliant lanes you left undecided. Pricing now shows **Rates ready for quote drafting** with the two offers.

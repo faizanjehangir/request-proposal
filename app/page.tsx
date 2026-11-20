@@ -14,23 +14,25 @@ export default async function Home() {
     <>
       <div className="page-heading">
         <h1>RFP intake</h1>
-        <p>Import shipper lanes and the carrier’s flight inventory.</p>
+        <p>Start a proposal from a shipper request or pick up an existing one.</p>
       </div>
       <div className="workspace-grid">
         <div className="stack">
           <ImportForm />
           <section className="panel" aria-labelledby="imports-title">
-            <div className="section-heading"><h2 id="imports-title">Imported RFPs</h2></div>
+            <div className="section-heading heading-with-count"><h2 id="imports-title">Imported RFPs</h2><span className="count-chip">{imports.length}</span></div>
             {imports.length ? (
               <ul className="import-list">
                 {imports.map((rfp) => (
                   <li key={rfp.id}>
-                    <Link href={`/rfps/${rfp.id}`}>{rfp.title}</Link>
-                    <p>{rfp.laneCount} lanes · {rfp.flightCount} flight legs · <time dateTime={rfp.importedAt}>{formatDate(rfp.importedAt)}</time></p>
+                    <Link href={`/rfps/${rfp.id}`}>
+                      <div><strong>{rfp.title}</strong><p>RFP {rfp.id} · {rfp.laneCount} lanes · <time dateTime={rfp.importedAt}>{formatDate(rfp.importedAt)}</time></p></div>
+                      <span aria-hidden="true">→</span>
+                    </Link>
                   </li>
                 ))}
               </ul>
-            ) : <p className="muted">Your imported requests will appear here.</p>}
+            ) : <p className="activity-empty">No requests yet. Load the sample or import your own workbook.</p>}
           </section>
         </div>
         <ActivityPanel events={activity} overview />

@@ -15,10 +15,10 @@ async function openLane(routing: Locator, origin: string, destination: string) {
 }
 
 async function saveDisposition(lane: Locator, disposition: "offer" | "alternative", reason = "") {
-  await lane.getByText("Confirm disposition", { exact: true }).click();
-  await lane.getByLabel("Lane disposition").selectOption(disposition);
+  await lane.getByText("Decide what to offer", { exact: true }).click();
+  await lane.getByLabel("Lane decision").selectOption(disposition);
   if (reason) await lane.getByLabel("Reason for an alternative or no offer").fill(reason);
-  await lane.getByRole("button", { name: "Save disposition" }).click();
+  await lane.getByRole("button", { name: "Save decision" }).click();
   await expect(lane.locator(".saved-disposition")).toContainText(disposition === "offer" ? "Compliant offer" : "Offer with disclosed gap");
 }
 
@@ -34,12 +34,15 @@ test("the workbook becomes one accepted proposal and one simulated kickoff", asy
   const pricing = page.locator("#pricing");
   const quote = page.locator("#quote");
   const closeout = page.locator("#closeout");
+  const progress = page.getByRole("navigation", { name: "Proposal progress" });
+  await expect(progress.locator("[aria-current=step]")).toContainText("Routing");
+  await expect(page.getByRole("heading", { name: "Analyze the shipper’s request" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Shipper lane table" }).locator("tbody tr")).toHaveCount(100);
   await routing.getByRole("button", { name: "Extract requirements and find routes" }).click();
   await expect(routing.getByText("Showing 100 of 100 lanes")).toBeVisible();
-  await routing.getByLabel("Disposition filter").selectOption("decided");
+  await routing.getByLabel("Filter by decision").selectOption("decided");
   await expect(routing.getByText("No lanes match.", { exact: false })).toBeVisible();
-  await routing.getByLabel("Disposition filter").selectOption("all");
+  await routing.getByLabel("Filter by decision").selectOption("all");
 
   const mex = await openLane(routing, "MEX", "CDG");
   await expect(routing.getByText("Showing 1 of 100 lanes")).toBeVisible();
@@ -53,6 +56,7 @@ test("the workbook becomes one accepted proposal and one simulated kickoff", asy
   const gru = await openLane(routing, "GRU", "SIN");
   await expect(gru.getByText("Service gap", { exact: true })).toBeVisible();
   await saveDisposition(gru, "alternative", "The direct route will use standard handling. Fragile handling is unavailable.");
+  await expect(page.getByRole("link", { name: "Work on Pricing in parallel" })).toHaveAttribute("href", "#pricing");
 
   await pricing.getByRole("button", { name: "Send simulated Pricing email" }).click();
   await pricing.getByRole("button", { name: "Simulate incomplete reply" }).click();
@@ -73,12 +77,14 @@ test("the workbook becomes one accepted proposal and one simulated kickoff", asy
   await expect(updatedGru.getByText("Service gap", { exact: true })).toBeVisible();
   await saveDisposition(await openLane(routing, "GRU", "SIN"), "alternative", "Disclose that fragile handling is unavailable.");
 
+  await routing.getByText("Bulk decisions", { exact: true }).click();
   await routing.getByText("Mark remaining lanes as no offer", { exact: true }).click();
   await routing.getByLabel("Reason for marking these lanes as no offer").fill("No offer on this lane under the exercise proposal.");
   await routing.getByRole("button", { name: "Mark 98 lanes as no offer" }).click();
   await pricing.getByRole("button", { name: "Send updated Pricing request" }).click();
   await pricing.getByRole("button", { name: "Simulate complete reply" }).click();
   await expect(pricing.getByRole("status")).toHaveText("Rates ready for quote drafting");
+  await expect(progress.locator("[aria-current=step]")).toContainText("Customer quote");
   await pricing.getByRole("link", { name: "Open customer quote" }).click();
 
   await quote.getByRole("button", { name: "Create quote draft" }).click();
@@ -97,12 +103,15 @@ test("the workbook becomes one accepted proposal and one simulated kickoff", asy
 
   await closeout.getByRole("button", { name: "Simulate partial acceptance" }).click();
   await expect(closeout.getByRole("status")).toHaveText("Partial acceptance · Human review needed");
+  await expect(page.getByRole("link", { name: "Review reply", exact: true })).toHaveAttribute("href", "#current-customer-reply");
+  await expect(closeout.locator("#current-customer-reply")).toHaveAttribute("open", "");
   await expect(closeout.getByText(/View accepted proposal in SQLite/)).toHaveCount(0);
   await closeout.getByLabel("Simulate a temporary calendar failure").check();
   await closeout.getByRole("button", { name: "Simulate full acceptance" }).click();
   await expect(closeout.getByRole("status")).toHaveText("Proposal accepted · Kickoff scheduling failed");
   await closeout.getByRole("button", { name: "Retry kickoff scheduling" }).click();
   await expect(closeout.getByRole("status")).toHaveText("Proposal accepted · Kickoff booked");
+  await expect(page.getByRole("heading", { name: "Proposal accepted and kickoff booked" })).toBeVisible();
   await closeout.getByRole("button", { name: "Replay acceptance reply" }).click();
   await expect(page.getByRole("heading", { name: "Replay existing acceptance" })).toBeVisible();
   await page.reload();

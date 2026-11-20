@@ -14,8 +14,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <a className="skip-link" href="#main-content">Skip to content</a>
         <header className="masthead">
           <div className="container masthead-content">
-            <Link className="brand" href="/">Air Freight <span>RFP Response</span></Link>
-            <span className="masthead-label">Demo reviewer</span>
+            <Link className="brand" href="/">
+              <span className="brand-mark" aria-hidden="true">↗</span>
+              <span className="brand-name">Air Freight <small>RFP Workspace</small></span>
+            </Link>
+            <span className="masthead-label">Simulation workspace</span>
           </div>
         </header>
         <main className="container" id="main-content">{children}</main>

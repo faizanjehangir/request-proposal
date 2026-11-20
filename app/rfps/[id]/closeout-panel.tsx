@@ -18,11 +18,11 @@ const scenarios = [
   ["superseded", "Simulate reply to earlier version"],
 ] as const satisfies ReadonlyArray<readonly [CustomerScenario, string]>;
 
-function CustomerReply({ item, rfpId, closed }: { item: Reply; rfpId: number; closed: boolean }) {
+function CustomerReply({ item, rfpId, closed, current }: { item: Reply; rfpId: number; closed: boolean; current: boolean }) {
   const { message, version, reply } = item;
   const needsReview = reply.intent !== "accepted" && reply.intent !== "duplicate" && !reply.resolution && !closed;
   return (
-    <details className="closeout-reply">
+    <details className="closeout-reply" id={current ? "current-customer-reply" : undefined} open={current && needsReview ? true : undefined}>
       <summary>{replyLabels[reply.intent]} · v{version} <small>· {formatDate(message.recordedAt)} ET</small></summary>
       <p className="pricing-note">{reply.explanation}</p>
       <pre className="pricing-email">{message.body}</pre>
@@ -114,18 +114,21 @@ export function CloseoutPanel({ rfpId, workspace }: { rfpId: number; workspace: 
         <h2 id="closeout-title">Acceptance and kickoff</h2>
         <p>Review customer replies and check the accepted proposal and simulated meeting.</p>
       </div>
-      <p className={`routing-status ${job?.lastError ? "pricing-stale" : ""}`} role="status">{status}</p>
+      <p className="routing-status" data-tone={invite ? "success" : job?.lastError || (currentReply && !currentReply.resolution) ? "attention" : "neutral"} role="status">{status}</p>
       {current && !proposal && (
         <>
-          <p className="muted pricing-note">Replies go to {quoteReference(rfpId, current.quote.version)}.</p>
-          <RoutingForm action={sendCustomerReply.bind(null, rfpId, current.quote.id, latest?.message.id ?? 0, "full")}
-            button="Simulate full acceptance" primary>
-            <label className="check-option"><input type="checkbox" name="simulateFailure" />Simulate a temporary calendar failure</label>
-          </RoutingForm>
-          <div className="pricing-reply-actions">
-            {scenarios.filter(([value]) => value !== "superseded" || delivered.length > 1).map(([value, label]) => (
-              <RoutingForm key={value} action={sendCustomerReply.bind(null, rfpId, current.quote.id, latest?.message.id ?? 0, value)} button={label} />
-            ))}
+          <div className="workflow-inset">
+            <h3>Simulate the customer’s reply</h3>
+            <p className="muted">Replies go to {quoteReference(rfpId, current.quote.version)}. Full acceptance saves the proposal and queues the kickoff. Other replies go to human review.</p>
+            <RoutingForm action={sendCustomerReply.bind(null, rfpId, current.quote.id, latest?.message.id ?? 0, "full")}
+              button="Simulate full acceptance" primary>
+              <label className="check-option"><input type="checkbox" name="simulateFailure" />Simulate a temporary calendar failure</label>
+            </RoutingForm>
+            <div className="pricing-reply-actions">
+              {scenarios.filter(([value]) => value !== "superseded" || delivered.length > 1).map(([value, label]) => (
+                <RoutingForm key={value} action={sendCustomerReply.bind(null, rfpId, current.quote.id, latest?.message.id ?? 0, value)} button={label} />
+              ))}
+            </div>
           </div>
           <details className="pricing-correction">
             <summary>Enter a simulated customer reply</summary>
@@ -140,7 +143,7 @@ export function CloseoutPanel({ rfpId, workspace }: { rfpId: number; workspace: 
       {replies.length > 0 && (
         <section className="quote-preview" aria-labelledby="customer-replies-title">
           <h3 id="customer-replies-title">Customer replies</h3>
-          {replies.map((item) => <CustomerReply key={item.message.id} item={item} rfpId={rfpId} closed={Boolean(proposal)} />)}
+          {replies.map((item) => <CustomerReply key={item.message.id} item={item} rfpId={rfpId} closed={Boolean(proposal)} current={item.reply === currentReply} />)}
           {clarifications.map((message) => (
             <details className="closeout-reply" key={message.id}>
               <summary>Clarification sent <small>· {formatDate(message.recordedAt)} ET</small></summary>

@@ -38,6 +38,15 @@ export default function ImportForm() {
 
   return (
     <>
+      <section className="panel sample" aria-labelledby="sample-title">
+        <div>
+          <h2 id="sample-title">Try a sample RFP</h2>
+          <p>Start a fresh exercise with 100 shipper lanes and a flight inventory. Each load creates a new request.</p>
+        </div>
+        <button className="button primary" type="button" disabled={pending !== null} onClick={() => submit("sample", new FormData())}>
+          {pending === "sample" ? "Loading sample…" : "Load sample RFP"}
+        </button>
+      </section>
       <section className="panel" aria-labelledby="upload-title">
         <div className="section-heading">
           <h2 id="upload-title">Import a workbook</h2>
@@ -58,12 +67,6 @@ export default function ImportForm() {
             <button className="button primary" type="submit">{pending === "upload" ? "Importing workbook…" : "Import workbook"}</button>
           </fieldset>
         </form>
-        <div className="sample">
-          <div><h3>Try the sample</h3><p>100 shipper lanes and 100 directed flight records.</p></div>
-          <button className="button" type="button" disabled={pending !== null} onClick={() => submit("sample", new FormData())}>
-            {pending === "sample" ? "Loading sample…" : "Load sample RFP"}
-          </button>
-        </div>
       </section>
       {error && (
         <section className="panel error-panel" role="alert" aria-labelledby="error-title">

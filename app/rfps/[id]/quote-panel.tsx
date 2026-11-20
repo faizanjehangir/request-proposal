@@ -25,7 +25,7 @@ export function QuotePanel({ rfpId, workspace }: { rfpId: number; workspace: Wor
   const { current, versions, approved, job, messages, ready, stale, closed } = workspace;
   const version = current ? `v${current.version}` : "";
   const sent = job?.status === "complete";
-  const status = closed ? "Proposal accepted" : !current ? (ready ? "Ready to draft the customer quote" : "Waiting for final lane dispositions and validated rates")
+  const status = closed ? "Proposal accepted" : !current ? (ready ? "Ready to draft the customer quote" : "Waiting for lane decisions and validated rates")
     : sent ? `Quote ${version} delivered to the simulated customer`
       : stale ? `Quote ${version} needs updated terms`
         : job?.lastError ? "Simulated delivery failed · Retry available"
@@ -38,10 +38,10 @@ export function QuotePanel({ rfpId, workspace }: { rfpId: number; workspace: Wor
         <h2 id="quote-title">Customer quote</h2>
         <p>Review the exact proposal email and deliver it to the simulated customer inbox.</p>
       </div>
-      <p className={`routing-status ${stale || job?.lastError ? "pricing-stale" : ""}`} role="status">{status}</p>
+      <p className="routing-status" data-tone={closed || sent ? "success" : stale || job?.lastError ? "attention" : "neutral"} role="status">{status}</p>
       {sent && <p className="pricing-note"><a href="#closeout">Open acceptance and kickoff</a></p>}
       {!closed && stale && <p className="routing-warning pricing-note">Routing or Pricing has changed. Create an updated version once the lane terms are ready.</p>}
-      {!ready && !current && <p className="pricing-note"><a href="#routing">Review lane dispositions</a> or <a href="#pricing">reconcile Pricing replies</a>.</p>}
+      {!ready && !current && <p className="pricing-note"><a href="#routing">Review lane decisions</a> or <a href="#pricing">check Pricing replies</a>.</p>}
 
       {!closed && ready && (!current || stale) && (
         <RoutingForm action={generateQuote.bind(null, rfpId, current?.id ?? null)}

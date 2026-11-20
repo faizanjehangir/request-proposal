@@ -10,6 +10,7 @@ import { CloseoutPanel } from "./closeout-panel";
 import { QuotePanel } from "./quote-panel";
 import { PricingPanel } from "./pricing-panel";
 import { RoutingPanel } from "./routing-panel";
+import { WorkflowOverview } from "./workflow-overview";
 import { getRfp } from "@/src/db/queries";
 import { ActivityPanel } from "../../components/activity-panel";
 import { formatDate } from "../../components/dates";
@@ -31,15 +32,12 @@ export default async function RfpDetail({ params }: { params: Promise<{ id: stri
   return (
     <>
       <div className="page-heading detail-heading">
-        <Link className="back-link" href="/">RFP intake</Link>
+        <Link className="back-link" href="/"><span aria-hidden="true">← </span>All RFPs</Link>
         <h1>{rfp.title}</h1>
-        <p>Imported by {rfp.reviewer} · <time dateTime={rfp.importedAt}>{formatDate(rfp.importedAt)}</time> ET</p>
+        <p>RFP {rfp.id} · {rfp.lanes.length} lanes · Imported <time dateTime={rfp.importedAt}>{formatDate(rfp.importedAt)}</time> ET</p>
       </div>
-      <nav className="section-nav" aria-label="RFP details">
-        <a href="#routing">Routing review</a>
-        <a href="#pricing">Pricing</a>
-        <a href="#quote">Customer quote</a>
-        <a href="#closeout">Acceptance and kickoff</a>
+      <WorkflowOverview total={rfp.lanes.length} routing={routing} pricing={pricing} quote={quote} closeout={closeout} />
+      <nav className="section-nav" aria-label="Reference and activity">
         <a href="#sources">Source files</a>
         <a href="#lanes">Shipper lanes <span>{rfp.lanes.length}</span></a>
         <a href="#transit">Flight inventory <span>{rfp.flights.length}</span></a>

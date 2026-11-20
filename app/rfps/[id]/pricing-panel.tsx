@@ -102,11 +102,11 @@ export function PricingPanel({ rfpId, workspace }: { rfpId: number; workspace: W
         <h2 id="pricing-title">Pricing correspondence</h2>
         <p>Request USD-per-ton rates for confirmed offers while routing review continues. Email stays in the simulated inbox.</p>
       </div>
-      <p className={`routing-status ${stale ? "pricing-stale" : ""}`} role="status">{state}</p>
+      <p className="routing-status" data-tone={quoteReady || requestPriced ? "success" : stale || reply?.issues.length || job?.lastError ? "attention" : "neutral"} role="status">{state}</p>
       {quoteReady && <p className="pricing-note"><a href="#quote">Open customer quote</a></p>}
       {stale && current.blockedReason && <p className="routing-warning pricing-note">{current.blockedReason}</p>}
       {current.pending > 0 && !current.blockedReason && (
-        <p className="muted pricing-note">Quote drafting is blocked while {current.pending} {current.pending === 1 ? "lane awaits" : "lanes await"} a disposition.</p>
+        <p className="muted pricing-note">You can price confirmed offers now. Before drafting the quote, <a href="#routing">decide the {current.pending} remaining {current.pending === 1 ? "lane" : "lanes"}</a>.</p>
       )}
       {additionalOffers > 0 && !stale && (
         <p className="muted pricing-note">{additionalOffers} newly confirmed {additionalOffers === 1 ? "offer needs" : "offers need"} an updated Pricing request.</p>
@@ -129,10 +129,14 @@ export function PricingPanel({ rfpId, workspace }: { rfpId: number; workspace: W
         </div>
       )}
       {demoActions && (
-        <div className="pricing-reply-actions">
-          <RoutingForm action={sendPricingReply.bind(null, rfpId, active.id, replyId, "complete")} button="Simulate complete reply" />
-          <RoutingForm action={sendPricingReply.bind(null, rfpId, active.id, replyId, "incomplete")} button="Simulate incomplete reply" />
-          <RoutingForm action={sendPricingReply.bind(null, rfpId, active.id, replyId, "conflicting")} button="Simulate conflicting reply" />
+        <div className="workflow-inset">
+          <h3>Simulate the Pricing team’s reply</h3>
+          <p className="muted">Use a complete reply to get rates for every requested lane. Incomplete and conflicting replies let you practice reviewing a missing rate or two different prices for the same lane.</p>
+          <div className="pricing-reply-actions">
+            <RoutingForm action={sendPricingReply.bind(null, rfpId, active.id, replyId, "complete")} button="Simulate complete reply" primary={!requestPriced} />
+            <RoutingForm action={sendPricingReply.bind(null, rfpId, active.id, replyId, "incomplete")} button="Simulate incomplete reply" />
+            <RoutingForm action={sendPricingReply.bind(null, rfpId, active.id, replyId, "conflicting")} button="Simulate conflicting reply" />
+          </div>
           <details className="pricing-correction">
             <summary>Send a corrected reply</summary>
             <RoutingForm action={sendPricingReply.bind(null, rfpId, active.id, replyId, "corrected")} button="Send corrected reply">

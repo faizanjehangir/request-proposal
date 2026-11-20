@@ -104,6 +104,9 @@ function LaneReview({ rfpId, lane, review, workspace }: { rfpId: number; lane: L
         {assessment?.status === "service_gap" && !permittedDispositions(assessment).includes("alternative") && (
           <p className="routing-warning">The exercise policy blocks offers with this service gap.</p>
         )}
+        {options.includes("alternative") && (
+          <p className="muted">If you offer this route with the gap disclosed, Pricing will quote only the available services and the customer will see what is unavailable.</p>
+        )}
 
         <details className="review-edit">
           <summary>{requirements === null ? "Confirm or correct services" : "Correct requirements"}</summary>
@@ -123,10 +126,10 @@ function LaneReview({ rfpId, lane, review, workspace }: { rfpId: number; lane: L
 
         {disposition && <p className="saved-disposition"><strong>{dispositionLabels[disposition]}</strong>{review.dispositionReason && ` · ${review.dispositionReason}`}</p>}
         <details className="review-edit">
-          <summary>{disposition ? "Change disposition" : "Confirm disposition"}</summary>
-          <RoutingForm key={review.revision} action={saveLaneDisposition.bind(null, rfpId, lane.id, review.revision)} button="Save disposition">
+          <summary>{disposition ? "Change decision" : "Decide what to offer"}</summary>
+          <RoutingForm key={review.revision} action={saveLaneDisposition.bind(null, rfpId, lane.id, review.revision)} button="Save decision">
             <div className="field">
-              <label htmlFor={`disposition-${lane.id}`}>Lane disposition</label>
+              <label htmlFor={`disposition-${lane.id}`}>Lane decision</label>
               <select id={`disposition-${lane.id}`} name="disposition" defaultValue={disposition && options.includes(disposition) ? disposition : options[0]}>
                 {options.map((value) => <option value={value} key={value}>{dispositionLabels[value]}</option>)}
               </select>
@@ -152,20 +155,20 @@ export function RoutingPanel({ rfp, workspace }: { rfp: Rfp; workspace: RoutingR
     <section id="routing" className="panel" aria-labelledby="routing-title">
       <div className="section-heading">
         <h2 id="routing-title">Routing review</h2>
-        <p>Compare requested services with the flight inventory and decide which lanes to offer.</p>
+        <p>For each lane, decide whether to offer the suggested route, disclose an eligible service gap, or decline.</p>
       </div>
       {!analysis ? (
         <RoutingForm action={runAnalysis.bind(null, rfp.id)} button="Extract requirements and find routes" pendingLabel="Analyzing lanes…" primary />
       ) : (
         <>
-          <p className="routing-status" role="status">
+          <p className="routing-status" data-tone={emailNeedsReview ? "attention" : pending ? "neutral" : "success"} role="status">
             {pending || emailNeedsReview
-              ? `${pending} of ${rfp.lanes.length} lanes awaiting a disposition${emailNeedsReview ? " · Shipper email needs review" : ""}`
+              ? `${pending} of ${rfp.lanes.length} lanes awaiting a decision${emailNeedsReview ? " · Shipper email needs review" : ""}`
               : offered ? `Routing complete · ${offered} ${offered === 1 ? "lane" : "lanes"} ready for pricing` : "Routing complete · No offer"}
           </p>
           {offered > 0 && !emailNeedsReview && <p className="pricing-note"><a href="#pricing">Request rates for confirmed offers</a></p>}
           {analysis.issues.length > 0 && (
-            <details className="email-review" open={emailNeedsReview}>
+            <details id="email-review" className="email-review" open={emailNeedsReview}>
               <summary>{emailNeedsReview ? "Review unmatched shipper email" : "Unmatched shipper email reviewed"}</summary>
               {analysis.issues.map((issue, index) => (
                 <div key={index} className="email-issue">
@@ -179,17 +182,21 @@ export function RoutingPanel({ rfp, workspace }: { rfp: Rfp; workspace: RoutingR
               )}
             </details>
           )}
-          {compliantPending > 0 && !emailNeedsReview && (
-            <RoutingForm action={confirmAllCompliant.bind(null, rfp.id)} button={`Confirm ${compliantPending} compliant ${compliantPending === 1 ? "offer" : "offers"}`} />
-          )}
           {pending > 0 && (
-            <details className="review-edit pricing-note">
-              <summary>Mark remaining lanes as no offer</summary>
-              <p>Applies to all {pending} open {pending === 1 ? "lane" : "lanes"}, including any open compliant routes. Confirm any offers you want to keep first.</p>
-              <RoutingForm action={declineAllOpen.bind(null, rfp.id, pendingDispositionKey(reviews))}
-                button={`Mark ${pending} ${pending === 1 ? "lane" : "lanes"} as no offer`}>
-                <Reason id="bulk-no-offer-reason" label="Reason for marking these lanes as no offer" required />
-              </RoutingForm>
+            <details className="workflow-inset">
+              <summary>Bulk decisions</summary>
+              <p className="muted">Review individual lanes below, or apply a decision to multiple open lanes at once.</p>
+              {compliantPending > 0 && !emailNeedsReview && (
+                <RoutingForm action={confirmAllCompliant.bind(null, rfp.id)} button={`Confirm ${compliantPending} compliant ${compliantPending === 1 ? "offer" : "offers"}`} />
+              )}
+              <details className="pricing-note">
+                <summary>Mark remaining lanes as no offer</summary>
+                <p className="muted">Applies to all {pending} open {pending === 1 ? "lane" : "lanes"}, including any open compliant routes. Confirm any offers you want to keep first.</p>
+                <RoutingForm action={declineAllOpen.bind(null, rfp.id, pendingDispositionKey(reviews))}
+                  button={`Mark ${pending} ${pending === 1 ? "lane" : "lanes"} as no offer`}>
+                  <Reason id="bulk-no-offer-reason" label="Reason for marking these lanes as no offer" required />
+                </RoutingForm>
+              </details>
             </details>
           )}
           <LaneReviewExplorer groups={groups.map(({ id, title, lanes }) => ({
