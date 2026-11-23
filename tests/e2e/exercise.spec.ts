@@ -82,7 +82,13 @@ test("the workbook becomes one accepted proposal and one simulated kickoff", asy
   await routing.getByLabel("Reason for marking these lanes as no offer").fill("No offer on this lane under the exercise proposal.");
   await routing.getByRole("button", { name: "Mark 98 lanes as no offer" }).click();
   await pricing.getByRole("button", { name: "Send updated Pricing request" }).click();
-  await pricing.getByRole("button", { name: "Simulate complete reply" }).click();
+  await pricing.getByText("Send a corrected reply", { exact: true }).click();
+  await pricing.getByRole("button", { name: "Load complete Pricing example" }).click();
+  const pricingBody = pricing.getByLabel("Corrected Pricing email");
+  await expect(pricingBody).toHaveValue(/MEX to CDG[\s\S]*GRU to SIN.*for standard handling only/);
+  await expect(pricing.getByRole("status")).toHaveText("Waiting for a Pricing reply · Quote blocked");
+  await pricingBody.fill((await pricingBody.inputValue()).replace("1,840.00", "1,840.25"));
+  await pricing.getByRole("button", { name: "Send corrected reply" }).click();
   await expect(pricing.getByRole("status")).toHaveText("Rates ready for quote drafting");
   await expect(progress.locator("[aria-current=step]")).toContainText("Customer quote");
   await pricing.getByRole("link", { name: "Open customer quote" }).click();
@@ -96,12 +102,17 @@ test("the workbook becomes one accepted proposal and one simulated kickoff", asy
   await expect(quote.getByRole("button", { name: "Send simulated quote" })).toHaveCount(0);
   const approvedBody = await quote.getByRole("region", { name: "Quote v2 email preview" }).textContent();
   expect(approvedBody).toContain("Requested services unavailable: Fragile handling");
+  expect(approvedBody).toContain("USD 1,840.25 per ton");
   await quote.getByRole("button", { name: "Approve quote v2" }).click();
   await quote.getByRole("button", { name: "Send simulated quote" }).click();
   await expect(quote.getByRole("status")).toHaveText("Quote v2 delivered to the simulated customer");
   await quote.getByRole("link", { name: "Open acceptance and kickoff" }).click();
 
-  await closeout.getByRole("button", { name: "Simulate partial acceptance" }).click();
+  await closeout.getByText("Enter a simulated customer reply", { exact: true }).click();
+  await closeout.getByRole("button", { name: "Partial acceptance", exact: true }).click();
+  await expect(closeout.getByLabel("Customer email")).toHaveValue("We accept only the first offered lane.");
+  await expect(closeout.getByRole("status")).toHaveText("Waiting for the customer’s reply");
+  await closeout.getByRole("button", { name: "Submit customer reply" }).click();
   await expect(closeout.getByRole("status")).toHaveText("Partial acceptance · Human review needed");
   await expect(page.getByRole("link", { name: "Review reply", exact: true })).toHaveAttribute("href", "#current-customer-reply");
   await expect(closeout.locator("#current-customer-reply")).toHaveAttribute("open", "");

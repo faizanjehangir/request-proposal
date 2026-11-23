@@ -252,6 +252,8 @@ tr:target, li:target { background: var(--accent-soft); }
 .pricing-email { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 20rem; overflow: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: .65rem; font: inherit; }
 .pricing-reply-actions { display: flex; flex-wrap: wrap; gap: 0 .45rem; }
 .pricing-reply-actions .routing-form { min-width: 0; }
+.reply-examples { display: flex; flex-wrap: wrap; gap: .4rem; }
+.reply-examples .button { font-size: .85rem; padding: .35rem .6rem; }
 .pricing-exception summary { color: var(--error); }
 .pricing-results .table-scroll { margin-top: .45rem; }
 .pricing-results .evidence-block { overflow-wrap: anywhere; }

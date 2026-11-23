@@ -5,6 +5,7 @@ import { describeServices, quoteReference } from "@/src/quotes/contracts";
 import { formatDate } from "../../components/dates";
 import { replayCustomerAcceptance, retryCalendar, saveReplyReview, sendCustomerReply } from "./closeout-actions";
 import { RoutingForm } from "./routing-form";
+import { ReplyEditor } from "./reply-editor";
 
 type Workspace = Awaited<ReturnType<typeof getCloseoutWorkspace>>;
 type Reply = Workspace["replies"][number];
@@ -17,6 +18,14 @@ const scenarios = [
   ["unclear", "Simulate ambiguous reply"],
   ["superseded", "Simulate reply to earlier version"],
 ] as const satisfies ReadonlyArray<readonly [CustomerScenario, string]>;
+
+const customerExamples = [
+  { label: "Full acceptance", body: "We accept this proposal in full." },
+  { label: "Partial acceptance", body: "We accept only the first offered lane." },
+  { label: "Counteroffer", body: "We can proceed if you reduce the rate by 10%." },
+  { label: "Rejection", body: "We decline the proposal." },
+  { label: "Ambiguous reply", body: "This looks promising. We’re still reviewing the proposal." },
+];
 
 function CustomerReply({ item, rfpId, closed, current }: { item: Reply; rfpId: number; closed: boolean; current: boolean }) {
   const { message, version, reply } = item;
@@ -133,9 +142,9 @@ export function CloseoutPanel({ rfpId, workspace }: { rfpId: number; workspace: 
           <details className="pricing-correction">
             <summary>Enter a simulated customer reply</summary>
             <RoutingForm action={sendCustomerReply.bind(null, rfpId, current.quote.id, latest?.message.id ?? 0, "custom")} button="Submit customer reply">
-              <div className="field"><label htmlFor="customer-reply-body">Customer email</label>
-                <textarea id="customer-reply-body" name="body" required maxLength={maxCustomerReplyLength} rows={4} />
-              </div>
+              <ReplyEditor id="customer-reply-body" label="Customer email" rows={4} maxLength={maxCustomerReplyLength}
+                help="Choose an example to fill the editor, then edit or submit it. Explicit, unconditional agreement can close this simulated proposal. Partial, conditional, or unclear replies go to review."
+                examples={customerExamples} />
             </RoutingForm>
           </details>
         </>

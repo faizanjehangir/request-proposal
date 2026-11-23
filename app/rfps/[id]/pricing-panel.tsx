@@ -1,10 +1,11 @@
 import { maxPricingReplyLength } from "@/src/pricing/contracts";
-import { formatUsd, laneName, serviceDescription } from "@/src/pricing/rates";
+import { formatUsd, laneName, mockPricingReply, serviceDescription } from "@/src/pricing/rates";
 import type { getPricingWorkspace } from "@/src/pricing/replies";
 import { pricingReference } from "@/src/pricing/requests";
 import { formatDate } from "../../components/dates";
 import { retryRateRequest, sendPricingReply, sendRateRequest } from "./pricing-actions";
 import { RoutingForm } from "./routing-form";
+import { ReplyEditor } from "./reply-editor";
 
 type Workspace = Awaited<ReturnType<typeof getPricingWorkspace>>;
 type Thread = Workspace["threads"][number];
@@ -140,11 +141,10 @@ export function PricingPanel({ rfpId, workspace }: { rfpId: number; workspace: W
           <details className="pricing-correction">
             <summary>Send a corrected reply</summary>
             <RoutingForm action={sendPricingReply.bind(null, rfpId, active.id, replyId, "corrected")} button="Send corrected reply">
-              <div className="field">
-                <label htmlFor="pricing-reply-body">Corrected Pricing email</label>
-                <p className="muted" id="pricing-reply-help">Include every lane in this Pricing request. Give each lane its own recommendation with its airport pair, USD per ton amount, and included services or standard handling.</p>
-                <textarea name="body" id="pricing-reply-body" aria-describedby="pricing-reply-help" maxLength={maxPricingReplyLength} rows={6} defaultValue={latestBody} required />
-              </div>
+              <ReplyEditor id="pricing-reply-body" label="Corrected Pricing email" rows={6}
+                maxLength={maxPricingReplyLength} defaultValue={latestBody}
+                help="A corrected reply replaces the previous one. Include every requested lane, with one recommendation per line. Use an explicit USD amount per ton and the exact services offered, or standard handling only. Load an example for this request, then edit it before sending."
+                examples={[{ label: "Load complete Pricing example", body: mockPricingReply(active.scope, "complete") }]} />
             </RoutingForm>
           </details>
         </div>
