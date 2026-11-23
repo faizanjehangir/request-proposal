@@ -2,6 +2,8 @@
 
 The app implements workbook intake, routing review, simulated Pricing, customer quote delivery, and proposal closeout for the carrier’s RFP Response Team.
 
+[Open the deployed app](https://request-proposal.vercel.app/).
+
 [Run the guided exercise from import to kickoff](docs/exercise-guide.md).
 
 ## Run locally
