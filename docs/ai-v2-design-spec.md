@@ -1,53 +1,27 @@
 # Air freight RFP AI V2 design specification
 
-## Decision
+## Current design
 
-Build a parallel **AI Lab** with LangGraph.js and the current Next.js and TypeScript stack. A reviewer opens the same imported RFP and starts an isolated V2 run. The lab shows evidence-backed suggestions, a route comparison, and a rehearsal of quote approval through simulated kickoff. V1 stays the comparison baseline. The first slice ends after reviewed routing.
+The **AI Lab** runs alongside V1 in the Next.js app. Both start from the same imported workbook, notes and flight inventory. V2 checkpoints live in a dedicated SQL table. After route review, the lab copies the reviewed snapshot into a separate database for commercial work. The comparison screen reads both workflows. [README architecture diagram](../README.md#v2-ai-lab-architecture)
 
-Use the model to interpret requests, suggest clarifications, and explain tradeoffs. Route feasibility, rate validation, quote versioning, acceptance, and writes use the existing rules. This gives V2 an AI-led reviewer experience with independently verifiable outcomes. An optional later experiment can let the model propose routes from a bounded set of real legs and compare its proposals to the exact engine.
+## What each component does today
 
-## How the RFP workflow maps to LangGraph
-
-| Step | Node and inputs | Output or next action |
+| Component | Responsibility | Where it runs |
 |---|---|---|
-| Start | Load the imported workbook, notes, optional email, and flight snapshot by RFP ID. | Create a run against an immutable input revision. |
-| Extract requirements | Ask the model for typed lane claims with source ID, verbatim span, and service label. Run the existing evidence validator and flag conflicts or missing details. | Route confirmed requirements. Ask the reviewer to resolve unclear ones and offer a draft clarification. |
-| Assess routes | Run the existing graph search using the saved transit snapshot. Ask AI for a short explanation using only the returned assessment and leg IDs. | Show feasible routes, gaps, and the evidence behind them. Require the reviewer to confirm what to offer. |
-| Price confirmed offers | Capture the current offer scope. Read a simulated reply through structured extraction and run the rate matcher. | Valid rates attach to the scoped request. Missing, qualified, conflicting, and out-of-scope rates create issues. Pricing can advance while other lane decisions remain open. |
-| Draft and approve | Render exact terms from validated rates and decisions. Use the model for editable surrounding prose. | Pause until a reviewer approves the precise version. A stale revision sends the run back to the relevant stage. |
-| Deliver and close | Run the simulated email adapter. On reply, suggest an intent and cite the text. Server rules check sender, thread, version, and explicit full acceptance. | Ambiguous or conditional replies pause for review. Verified acceptance writes the proposal and queues kickoff through the existing transaction and outbox pattern. |
+| LangGraph.js | Runs extraction, pauses for a reviewer, and resumes into route assessment. SQL stores the checkpoint and pending writes. A revision check lets only one submission publish a given review. | [Lab graph](../src/lab/workflow.ts) · [Checkpoints](../src/lab/checkpoints.ts) · [Run lifecycle](../src/lab/runs.ts) |
+| Requirement extraction | Uses rules in fixture mode. In OpenAI mode, requests structured lane and service claims with verbatim source excerpts. Application validation checks source and lane references. Failed extraction leaves the run for manual confirmation. | [Extraction and evidence validation](../src/routing/extraction.ts) |
+| Route engine | Finds directed itineraries within a time limit and checks services across every leg. The resulting durations and constraints feed the board and proposal. | [Route engine](../src/routing/engine.ts) |
+| Route assistant | Answers supported questions from the saved run and can focus a lane or apply a board filter. It first checks local patterns. Configured OpenAI mode can map unfamiliar phrasing to a bounded query. Application code runs the query and formats the result. | [Route assistant](../src/lab/assistant.ts) |
+| Commercial AI helpers | In configured OpenAI mode, can extract rate excerpts from a corrected Pricing reply, suggest a greeting and closing for an editable quote, or suggest a review category for an unclear custom customer reply. Each helper returns a typed result. | [Pricing evidence](../src/pricing/ai-extraction.ts) · [Quote wording](../src/quotes/wording.ts) · [Reply classification](../src/closeout/classification.ts) |
+| Commercial workflow | Uses transactional application code to validate rates, reconcile offer scope, require approval of the exact quote version, verify acceptance, and queue simulated delivery or kickoff. These actions operate on the isolated copy after the route graph ends. | [Sandbox setup](../src/lab/commercial.ts) · [Rate matcher](../src/pricing/rates.ts) · [Quote approval](../src/quotes/quote.ts) · [Acceptance transaction](../src/closeout/proposals.ts) |
 
-```mermaid
-flowchart LR
-    I[Import snapshot] --> X[Extract with model]
-    X --> V[Validate evidence]
-    V -->|Unresolved| H[Clarify and review]
-    H --> V
-    V --> R[Compute routes and explain]
-    R --> D[Confirm lane offers]
-    D --> P[Reconcile Pricing reply]
-    P -->|Corrected reply required| PR[Wait for Pricing correction]
-    PR --> P
-    P -->|Offer changed| D
-    D --> Q[Assemble complete quote]
-    P --> Q
-    Q --> A[Approve exact version]
-    A --> E[Simulate delivery]
-    E --> C[Validate customer reply]
-    C -->|Review needed| H2[Clarify or revise]
-    H2 --> Q
-    C -->|Full acceptance| K[Persist proposal and queue kickoff]
-```
-
-The diagram shows data dependencies. The quote node runs only when all lanes have a decision and every offered lane has a current validated rate. The Pricing node can operate on an earlier subset. A clarification that leaves terms unchanged can wait for another reply on the existing quote.
-
-Use LangGraph.js `StateGraph` for typed nodes and explicit transitions. Use `interrupt()` and `Command({ resume: ... })` for reviewer decisions. Store IDs and revision references in checkpoint state, alongside small typed node outputs. Structured resume inputs must pass authorization and revision checks. Put writes in separate replay-safe nodes or transactional operations, since interrupted nodes can re-execute when resumed. Emit node start, outcome and source references to the activity panel. [LangGraph interrupts](https://docs.langchain.com/oss/javascript/langgraph/interrupts) · [LangGraph persistence](https://docs.langchain.com/oss/javascript/langgraph/persistence)
+For GRU → SIN, extraction can identify the shipper's fragile-handling requirement and point to the excerpt. LangGraph waits for human confirmation. The route engine finds a four-day direct itinerary with a service gap and an 11-day full-service path against the eight-day cap. The assistant explains those saved results. In the proposal workspace, a reviewer decides whether to disclose the gap and offer standard handling. Pricing must match that offered scope.
 
 ## Model integration and developer workflow
 
-- **Fixture provider.** A V2 provider returns typed outputs for the existing sample and an evaluation corpus. Add cases for unmatched passages, unsupported services, omitted rates, malformed output and timeouts. Run the same nodes, validation and review gates as live mode. Display the active mode in each trace.
-- **Live provider.** Reuse the server-side structured Responses API adapter in [src/ai/structured.ts](../src/ai/structured.ts) with scoped settings such as `RFP_V2_MODEL_MODE=openai` and `RFP_V2_OPENAI_MODEL`, using the existing server-only `OPENAI_API_KEY`. Keep fixture mode the default. Apply per-node timeouts and input budgets, log model and prompt version, and surface exhausted retries for review. Start with one prompt and schema per task. LangChain model wrappers can be introduced if provider portability becomes a requirement.
-- **Dev kit.** Ship a local run/replay command, a few named scenarios, and an event trace in the lab. Use LangSmith Studio optionally to inspect graph steps on synthetic inputs when an Agent Server dev setup is useful. Use the repo's existing tests as regression coverage and add a small expected-output corpus for model evaluation. [LangGraph TypeScript workflow example](https://docs.langchain.com/oss/javascript/langgraph/thinking-in-langgraph) · [LangSmith local development](https://docs.langchain.com/langsmith/local-dev-testing)
+- **Fixture provider.** The rules-based extractor and simulator exercise the application without API credentials. The same graph, evidence checks and reviewer checkpoint also run in live mode.
+- **Live provider.** The server-side Responses API adapter requests a JSON-schema result and applies a request timeout. Each use case has a dedicated prompt and schema. Enable it with `RFP_V2_MODEL_MODE=openai`, `RFP_V2_OPENAI_MODEL`, and the server-side `OPENAI_API_KEY`. Prompt version tracking and per-node cost budgets belong in pilot evaluation. [Structured model adapter](../src/ai/structured.ts)
+- **Developer workflow.** Run the sample in fixture mode, inspect the lab's workflow trace, and use the automated tests for failure and replay scenarios. A local replay command, LangSmith Studio, and a labeled evaluation corpus are optional additions for a pilot. [LangGraph TypeScript workflow example](https://docs.langchain.com/oss/javascript/langgraph/thinking-in-langgraph) · [LangSmith local development](https://docs.langchain.com/langsmith/local-dev-testing)
 - **Persistence.** Persist the serialized LangGraph checkpoint and pending writes in the separate lab run table on SQLite or Turso. Reload them before each review and use a revision check to publish the result only once. The adapter uses a versioned payload tied to the installed LangGraph checkpoint format, so rerun restart and concurrent-review tests when upgrading LangGraph.
 - **Isolation.** Share read-only inputs and pure domain functions. Give V2 its own run IDs and store its proposal records, simulated mail and outbox in a separate database. The comparison screen uses the same immutable input snapshot for both versions. Deduplicate effects by run, action and input version. Use a run ID plus revision to reject stale resumes and repeated clicks.
 
@@ -64,6 +38,20 @@ Show the extraction, review and comparison stages horizontally. Display multiple
 Show counts across the whole RFP, with filters and paged lane rows. A read-only route assistant can summarize outcomes, apply a filter or focus a directed lane. Fixture mode uses deterministic query rules. Configured OpenAI mode can interpret unfamiliar phrasing into the same bounded query types. Answers use the assessed data from the current run. Label workbook-backed data as **Inventory snapshot**. Live flight positions, schedules or disruptions would require a separate data source and a freshness indicator.
 
 After the schematic, add a geographic view if spatial context is useful. Join IATA codes to a vetted airport-coordinate dataset and use deck.gl `ArcLayer` for selectable flight arcs. Missing coordinates should leave the leg available in the schematic and table. The geographic arc expresses connectivity, while the assessment displays workbook transit time. [deck.gl ArcLayer](https://deck.gl/docs/api-reference/layers/arc-layer)
+
+## Proposed assistant tools
+
+Current model calls return structured data. The app chooses when to call extraction, routing, Pricing, and closeout code. The assistant already dispatches a bounded query to application code. Model-selected tool calls become worthwhile when users need to combine several lookups in one request, such as finding blocked temperature-controlled lanes and citing the inventory rows that caused each block. [LangGraph workflows and agents](https://docs.langchain.com/oss/javascript/langgraph/workflows-agents) · [OpenAI function calling](https://developers.openai.com/api/docs/guides/function-calling)
+
+| First proposed read-only tool | Inputs | Grounded result |
+|---|---|---|
+| `list_routes` | Validated outcome filter, optional supported service, and page size | Matching lanes, total counts, deadlines and status reasons. |
+| `explain_lane` | Directed origin and destination | Selected itinerary, alternatives, service gaps, source excerpts and inventory rows. |
+| `get_proposal_status` | Scope derived from the authorized lab run | Open lane decisions, missing or stale rates, quote approval status and the next available action. |
+
+Bind each lookup to the active authorized run on the server. Validate airport codes, filters and limits before calling existing domain functions. Return source references, and use an explicit unavailable result when inputs or source data are missing. Keep approval, sending, acceptance and scheduling on the reviewed application actions. A future external inventory or Pricing adapter can use a simulated provider in tests and return the same typed result in production.
+
+First evaluate whether a read-only tool improves multi-step questions over the current bounded query approach. Include tests for invented airport pairs, missing and stale data, attempted cross-run reads, instructions embedded in source text, and requests to change commercial terms. Start with the existing TypeScript functions and typed contracts. Add a model tool dispatcher only when a measured use case needs it.
 
 ## Implementation phases and acceptance checks
 

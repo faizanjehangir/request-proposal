@@ -6,6 +6,39 @@ The app implements workbook intake, routing review, simulated Pricing, customer 
 
 [Run the guided exercise from import to kickoff](docs/exercise-guide.md).
 
+## V2 AI Lab architecture
+
+V1 and the AI Lab start from the same imported RFP snapshot. V2 uses LangGraph.js to extract requirements, pause for reviewer confirmation, and run the deterministic route engine. It carries the reviewed snapshot forward into a separate proposal workspace for Pricing, quote approval, and simulated closeout.
+
+```mermaid
+flowchart TD
+    Input["Imported workbook, notes and flight inventory"]
+    Input --> V1["V1 original workflow"]
+    Input --> Extract
+    subgraph Graph["V2 LangGraph workflow"]
+        Extract["Extract and verify requirement evidence"]
+        Extract --> Review["Pause for reviewer confirmation"]
+        Review --> Route["Resume and assess routes"]
+    end
+    Graph -.->|Save and restore| Checkpoint["SQL lab checkpoints"]
+    Route --> Board["Route board and read-only assistant"]
+    Route --> Proposal["V2 proposal workspace"]
+    Proposal --> Pricing["Reconcile scoped Pricing replies"]
+    Pricing --> Quote["Draft and approve exact quote version"]
+    Quote --> Closeout["Simulate delivery, acceptance and kickoff"]
+    Proposal --> Sandbox["Separate V2 commercial database"]
+    V1 --> Compare["Read-only V1 / V2 comparison"]
+    Board --> Compare
+    Sandbox --> Compare
+    Model["Optional OpenAI structured output"] -.-> Extract
+    Model -.-> Board
+    Model -.-> Pricing
+    Model -.-> Quote
+    Model -.-> Closeout
+```
+
+Fixture mode is the local default and needs no API key. Open **AI Lab** in the header to run V2 alongside V1. The design spec includes the live model settings, the hosted database setup, and a proposal for read-only tool calls. [V2 design spec](docs/ai-v2-design-spec.md) · [Run the AI Lab](docs/ai-v2-design-spec.md#run-the-local-lab) · [Proposed assistant tools](docs/ai-v2-design-spec.md#proposed-assistant-tools)
+
 ## Run locally
 
 Use Node.js 22. If you use nvm, run `nvm use` from the workspace root. Then install and start the app:
@@ -22,8 +55,6 @@ Click **Load sample RFP** to import the supplied workbook. The detail page shows
 SQLite defaults to `.data/rfp.sqlite`. To use a different file, set `RFP_DB_PATH` in the shell or copy `.env.example` to `.env.local` and edit the path.
 
 ## Review routes
-
-For the optional LangGraph workflow and interactive flight comparison, see the [V2 AI Lab instructions](docs/ai-v2-design-spec.md#run-the-local-lab).
 
 Open an imported RFP and select **Extract requirements and find routes**. The default fixture mode interprets the supplied sample notes and runs without credentials.
 
