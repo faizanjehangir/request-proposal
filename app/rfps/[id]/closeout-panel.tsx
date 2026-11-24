@@ -1,3 +1,4 @@
+import type { LabTarget } from "@/src/lab/commercial-target";
 import { replyLabels, reviewLabels, type CustomerScenario } from "@/src/closeout/contracts";
 import { maxCustomerReplyLength, type getCloseoutWorkspace } from "@/src/closeout/proposals";
 import { formatUsd } from "@/src/pricing/rates";
@@ -27,7 +28,7 @@ const customerExamples = [
   { label: "Ambiguous reply", body: "This looks promising. We’re still reviewing the proposal." },
 ];
 
-function CustomerReply({ item, rfpId, closed, current }: { item: Reply; rfpId: number; closed: boolean; current: boolean }) {
+function CustomerReply({ item, target, closed, current }: { item: Reply; target: number | LabTarget; closed: boolean; current: boolean }) {
   const { message, version, reply } = item;
   const needsReview = reply.intent !== "accepted" && reply.intent !== "duplicate" && !reply.resolution && !closed;
   return (
@@ -37,7 +38,7 @@ function CustomerReply({ item, rfpId, closed, current }: { item: Reply; rfpId: n
       <pre className="pricing-email">{message.body}</pre>
       {reply.resolution && <p className="saved-disposition"><strong>{reviewLabels[reply.resolution]}</strong> · {reply.resolutionNote}</p>}
       {needsReview && (
-        <RoutingForm action={saveReplyReview.bind(null, rfpId, message.id)} button="Save reply review">
+        <RoutingForm action={saveReplyReview.bind(null, target, message.id)} button="Save reply review">
           <div className="field">
             <label htmlFor={`review-action-${message.id}`}>Review decision</label>
             <select id={`review-action-${message.id}`} name="resolution" defaultValue={reply.intent === "rejection" ? "rejected" : "clarified"}>
@@ -108,7 +109,8 @@ function KickoffDetails({ invite }: { invite: NonNullable<Workspace["invite"]> }
   );
 }
 
-export function CloseoutPanel({ rfpId, workspace }: { rfpId: number; workspace: Workspace }) {
+export function CloseoutPanel({ rfpId, workspace, labTarget }: { rfpId: number; workspace: Workspace; labTarget?: LabTarget }) {
+  const target = labTarget ?? rfpId;
   const { delivered, proposal, invite, job, replies, clarifications } = workspace;
   const current = delivered[0];
   const latest = replies[0];
@@ -129,19 +131,19 @@ export function CloseoutPanel({ rfpId, workspace }: { rfpId: number; workspace: 
           <div className="workflow-inset">
             <h3>Simulate the customer’s reply</h3>
             <p className="muted">Replies go to {quoteReference(rfpId, current.quote.version)}. Full acceptance saves the proposal and queues the kickoff. Other replies go to human review.</p>
-            <RoutingForm action={sendCustomerReply.bind(null, rfpId, current.quote.id, latest?.message.id ?? 0, "full")}
+            <RoutingForm action={sendCustomerReply.bind(null, target, current.quote.id, latest?.message.id ?? 0, "full")}
               button="Simulate full acceptance" primary>
               <label className="check-option"><input type="checkbox" name="simulateFailure" />Simulate a temporary calendar failure</label>
             </RoutingForm>
             <div className="pricing-reply-actions">
               {scenarios.filter(([value]) => value !== "superseded" || delivered.length > 1).map(([value, label]) => (
-                <RoutingForm key={value} action={sendCustomerReply.bind(null, rfpId, current.quote.id, latest?.message.id ?? 0, value)} button={label} />
+                <RoutingForm key={value} action={sendCustomerReply.bind(null, target, current.quote.id, latest?.message.id ?? 0, value)} button={label} />
               ))}
             </div>
           </div>
           <details className="pricing-correction">
             <summary>Enter a simulated customer reply</summary>
-            <RoutingForm action={sendCustomerReply.bind(null, rfpId, current.quote.id, latest?.message.id ?? 0, "custom")} button="Submit customer reply">
+            <RoutingForm action={sendCustomerReply.bind(null, target, current.quote.id, latest?.message.id ?? 0, "custom")} button="Submit customer reply">
               <ReplyEditor id="customer-reply-body" label="Customer email" rows={4} maxLength={maxCustomerReplyLength}
                 help="Choose an example to fill the editor, then edit or submit it. Explicit, unconditional agreement can close this simulated proposal. Partial, conditional, or unclear replies go to review."
                 examples={customerExamples} />
@@ -152,7 +154,7 @@ export function CloseoutPanel({ rfpId, workspace }: { rfpId: number; workspace: 
       {replies.length > 0 && (
         <section className="quote-preview" aria-labelledby="customer-replies-title">
           <h3 id="customer-replies-title">Customer replies</h3>
-          {replies.map((item) => <CustomerReply key={item.message.id} item={item} rfpId={rfpId} closed={Boolean(proposal)} current={item.reply === currentReply} />)}
+          {replies.map((item) => <CustomerReply key={item.message.id} item={item} target={target} closed={Boolean(proposal)} current={item.reply === currentReply} />)}
           {clarifications.map((message) => (
             <details className="closeout-reply" key={message.id}>
               <summary>Clarification sent <small>· {formatDate(message.recordedAt)} ET</small></summary>
@@ -167,11 +169,11 @@ export function CloseoutPanel({ rfpId, workspace }: { rfpId: number; workspace: 
           {invite ? <KickoffDetails invite={invite} /> : (
             <>
               {job?.lastError && <p className="routing-warning pricing-note">{job.lastError}</p>}
-              <RoutingForm action={retryCalendar.bind(null, rfpId)}
+              <RoutingForm action={retryCalendar.bind(null, target)}
                 button={job?.lastError ? "Retry kickoff scheduling" : "Process queued kickoff"} primary />
             </>
           )}
-          <RoutingForm action={replayCustomerAcceptance.bind(null, rfpId)} button="Replay acceptance reply" />
+          <RoutingForm action={replayCustomerAcceptance.bind(null, target)} button="Replay acceptance reply" />
         </>
       )}
     </section>

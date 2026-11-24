@@ -1,3 +1,4 @@
+import type { CommercialTarget, LabTarget } from "@/src/lab/commercial-target";
 import type { getRfp } from "@/src/db/queries";
 import { pendingDispositionKey, type getRoutingReview } from "@/src/routing/review";
 import { permittedDispositions, routeLabels, services, type AssessedPath, type Disposition, type Evidence } from "@/src/routing/contracts";
@@ -16,7 +17,7 @@ const dispositionLabels: Record<Disposition, string> = {
   no_offer: "No offer",
 };
 
-function EvidenceBlock({ evidence, labels }: { evidence: Evidence; labels: Map<string, string> }) {
+function EvidenceBlock({ evidence, labels, sourcePath = "" }: { evidence: Evidence; labels: Map<string, string>; sourcePath?: string }) {
   if (!evidence.excerpt) return null;
   const row = /^workbook-row-(\d+)$/.exec(evidence.sourceId)?.[1];
   const sourceLink = row ? `#shipper-row-${row}` : evidence.sourceId === "shipper-email" ? "#shipper-email-source" : undefined;
@@ -24,7 +25,7 @@ function EvidenceBlock({ evidence, labels }: { evidence: Evidence; labels: Map<s
   return (
     <blockquote className="evidence-block">
       <p>{evidence.excerpt}</p>
-      <cite>{sourceLink ? <a href={sourceLink}>{label}</a> : label}</cite>
+      <cite>{sourceLink ? <a href={`${sourcePath}${sourceLink}`}>{label}</a> : label}</cite>
     </blockquote>
   );
 }
@@ -33,7 +34,7 @@ function Reason({ id, label, required = false }: { id: string; label: string; re
   return <div className="field"><label htmlFor={id}>{label}</label><textarea id={id} name="reason" rows={2} maxLength={2000} required={required} /></div>;
 }
 
-function PathDetails({ path }: { path: AssessedPath }) {
+function PathDetails({ path, sourcePath }: { path: AssessedPath; sourcePath: string }) {
   return (
     <div className="route-path">
       <p><strong>{path.airports.join(" → ")}</strong> · {path.totalDays} {path.totalDays === "1" ? "day" : "days"}</p>
@@ -48,7 +49,7 @@ function PathDetails({ path }: { path: AssessedPath }) {
         <ol>
           {path.legs.map((leg) => (
             <li key={leg.id}>
-              <strong>{leg.origin} → {leg.destination}</strong> · {leg.transitDays} {leg.transitDays === "1" ? "day" : "days"} · <a href={`#flight-row-${leg.sourceRow}`}>Transit row {leg.sourceRow}</a>
+              <strong>{leg.origin} → {leg.destination}</strong> · {leg.transitDays} {leg.transitDays === "1" ? "day" : "days"} · <a href={`${sourcePath}#flight-row-${leg.sourceRow}`}>Transit row {leg.sourceRow}</a>
               <p className="muted">Available · {leg.services.join(", ") || "Standard cargo"}</p>
               {leg.missing.length > 0 && <p className="routing-warning">Missing · {leg.missing.join(", ")}</p>}
             </li>
@@ -59,7 +60,7 @@ function PathDetails({ path }: { path: AssessedPath }) {
   );
 }
 
-function LaneReview({ rfpId, lane, review, workspace }: { rfpId: number; lane: Lane; review: Review; workspace: RoutingReview }) {
+function LaneReview({ target, lane, review, workspace, sourcePath }: { target: CommercialTarget; lane: Lane; review: Review; workspace: RoutingReview; sourcePath: string }) {
   const { assessment, disposition, requirements, extracted } = review;
   const laneKey = `${lane.origin} → ${lane.destination}`;
   const options = permittedDispositions(assessment).filter((value) => !workspace.emailNeedsReview || value === "no_offer");
@@ -85,16 +86,16 @@ function LaneReview({ rfpId, lane, review, workspace }: { rfpId: number; lane: L
             <summary>Original requirement evidence</summary>
             {[...extracted.evidence, ...extracted.issues.filter((issue) => issue.excerpt && !extracted.evidence.some(
               (item) => item.sourceId === issue.sourceId && item.excerpt === issue.excerpt,
-            ))].map((evidence, index) => <EvidenceBlock key={index} evidence={evidence} labels={workspace.sourceLabels} />)}
+            ))].map((evidence, index) => <EvidenceBlock key={index} evidence={evidence} labels={workspace.sourceLabels} sourcePath={sourcePath} />)}
           </details>
         )}
         {assessment?.path ? (
           <>
-            <PathDetails path={assessment.path} />
+            <PathDetails path={assessment.path} sourcePath={sourcePath} />
             {assessment.fullServicePath && assessment.status !== "compliant" && assessment.fullServicePath.legs.some((leg, index) => leg.id !== assessment.path?.legs[index]?.id) && (
               <details className="route-legs">
                 <summary>Fastest full-service route exceeds the time limit</summary>
-                <PathDetails path={assessment.fullServicePath} />
+                <PathDetails path={assessment.fullServicePath} sourcePath={sourcePath} />
               </details>
             )}
           </>
@@ -110,7 +111,7 @@ function LaneReview({ rfpId, lane, review, workspace }: { rfpId: number; lane: L
 
         <details className="review-edit">
           <summary>{requirements === null ? "Confirm or correct services" : "Correct requirements"}</summary>
-          <RoutingForm key={review.revision} action={saveRequirements.bind(null, rfpId, lane.id, review.revision)} button="Save and reroute">
+          <RoutingForm key={review.revision} action={saveRequirements.bind(null, target, lane.id, review.revision)} button="Save and reroute">
             <div className="field">
               <p>Select requested services. Leave all unchecked to confirm general cargo.</p>
               {services.map((service) => (
@@ -127,7 +128,7 @@ function LaneReview({ rfpId, lane, review, workspace }: { rfpId: number; lane: L
         {disposition && <p className="saved-disposition"><strong>{dispositionLabels[disposition]}</strong>{review.dispositionReason && ` · ${review.dispositionReason}`}</p>}
         <details className="review-edit">
           <summary>{disposition ? "Change decision" : "Decide what to offer"}</summary>
-          <RoutingForm key={review.revision} action={saveLaneDisposition.bind(null, rfpId, lane.id, review.revision)} button="Save decision">
+          <RoutingForm key={review.revision} action={saveLaneDisposition.bind(null, target, lane.id, review.revision)} button="Save decision">
             <div className="field">
               <label htmlFor={`disposition-${lane.id}`}>Lane decision</label>
               <select id={`disposition-${lane.id}`} name="disposition" defaultValue={disposition && options.includes(disposition) ? disposition : options[0]}>
@@ -142,7 +143,9 @@ function LaneReview({ rfpId, lane, review, workspace }: { rfpId: number; lane: L
   );
 }
 
-export function RoutingPanel({ rfp, workspace }: { rfp: Rfp; workspace: RoutingReview }) {
+export function RoutingPanel({ rfp, workspace, labTarget }: { rfp: Rfp; workspace: RoutingReview; labTarget?: LabTarget }) {
+  const target = labTarget ?? rfp.id;
+  const sourcePath = labTarget ? `/rfps/${labTarget.sourceId}` : "";
   const { analysis, reviews, pending, offered, emailNeedsReview, sourceLabels } = workspace;
   const byLane = new Map(reviews.map((review) => [review.laneId, review]));
   const compliantPending = reviews.filter((review) => review.assessment?.status === "compliant" && !review.disposition).length;
@@ -158,7 +161,7 @@ export function RoutingPanel({ rfp, workspace }: { rfp: Rfp; workspace: RoutingR
         <p>For each lane, decide whether to offer the suggested route, disclose an eligible service gap, or decline.</p>
       </div>
       {!analysis ? (
-        <RoutingForm action={runAnalysis.bind(null, rfp.id)} button="Extract requirements and find routes" pendingLabel="Analyzing lanes…" primary />
+        <RoutingForm action={runAnalysis.bind(null, target)} button="Extract requirements and find routes" pendingLabel="Analyzing lanes…" primary />
       ) : (
         <>
           <p className="routing-status" data-tone={emailNeedsReview ? "attention" : pending ? "neutral" : "success"} role="status">
@@ -172,11 +175,11 @@ export function RoutingPanel({ rfp, workspace }: { rfp: Rfp; workspace: RoutingR
               <summary>{emailNeedsReview ? "Review unmatched shipper email" : "Unmatched shipper email reviewed"}</summary>
               {analysis.issues.map((issue, index) => (
                 <div key={index} className="email-issue">
-                  <p>{issue.message}</p><EvidenceBlock evidence={issue} labels={sourceLabels} />
+                  <p>{issue.message}</p><EvidenceBlock evidence={issue} labels={sourceLabels} sourcePath={sourcePath} />
                 </div>
               ))}
               {emailNeedsReview && (
-                <RoutingForm action={resolveEmail.bind(null, rfp.id)} button="Confirm email review">
+                <RoutingForm action={resolveEmail.bind(null, target)} button="Confirm email review">
                   <Reason id="email-review-reason" label="Record how you resolved the unmatched passages and update affected lanes." required />
                 </RoutingForm>
               )}
@@ -187,12 +190,12 @@ export function RoutingPanel({ rfp, workspace }: { rfp: Rfp; workspace: RoutingR
               <summary>Bulk decisions</summary>
               <p className="muted">Review individual lanes below, or apply a decision to multiple open lanes at once.</p>
               {compliantPending > 0 && !emailNeedsReview && (
-                <RoutingForm action={confirmAllCompliant.bind(null, rfp.id)} button={`Confirm ${compliantPending} compliant ${compliantPending === 1 ? "offer" : "offers"}`} />
+                <RoutingForm action={confirmAllCompliant.bind(null, target)} button={`Confirm ${compliantPending} compliant ${compliantPending === 1 ? "offer" : "offers"}`} />
               )}
               <details className="pricing-note">
                 <summary>Mark remaining lanes as no offer</summary>
                 <p className="muted">Applies to all {pending} open {pending === 1 ? "lane" : "lanes"}, including any open compliant routes. Confirm any offers you want to keep first.</p>
-                <RoutingForm action={declineAllOpen.bind(null, rfp.id, pendingDispositionKey(reviews))}
+                <RoutingForm action={declineAllOpen.bind(null, target, pendingDispositionKey(reviews))}
                   button={`Mark ${pending} ${pending === 1 ? "lane" : "lanes"} as no offer`}>
                   <Reason id="bulk-no-offer-reason" label="Reason for marking these lanes as no offer" required />
                 </RoutingForm>
@@ -205,7 +208,7 @@ export function RoutingPanel({ rfp, workspace }: { rfp: Rfp; workspace: RoutingR
               const review = byLane.get(lane.id);
               return review ? [{
                 id: lane.id, origin: lane.origin, destination: lane.destination, open: !review.disposition,
-                content: <LaneReview rfpId={rfp.id} lane={lane} review={review} workspace={workspace} />,
+                content: <LaneReview target={target} sourcePath={sourcePath} lane={lane} review={review} workspace={workspace} />,
               }] : [];
             }),
           }))} />

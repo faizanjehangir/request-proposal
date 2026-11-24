@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { labEnabled } from "@/src/lab/config";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -18,7 +19,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               <span className="brand-mark" aria-hidden="true">↗</span>
               <span className="brand-name">Air Freight <small>RFP Workspace</small></span>
             </Link>
-            <span className="masthead-label">Simulation workspace</span>
+            {labEnabled()
+              ? <Link className="masthead-lab" href="/lab">AI Lab <span aria-hidden="true">↗</span></Link>
+              : <span className="masthead-label">Simulation workspace</span>}
           </div>
         </header>
         <main className="container" id="main-content">{children}</main>

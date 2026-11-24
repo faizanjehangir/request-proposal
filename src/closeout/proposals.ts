@@ -1,3 +1,4 @@
+import type { ModelConfig } from "../ai/structured";
 import { and, desc, eq, like, or, sql } from "drizzle-orm";
 import { demoReviewerId, type AppDb } from "../db/client";
 import { acceptedProposals, activityEvents, customerReplies, emailMessages, kickoffInvites, outboxJobs, quoteVersions } from "../db/schema";
@@ -127,7 +128,7 @@ export async function receiveCustomerReply(db: AppDb, incoming: Incoming, simula
 
 export async function simulateCustomerReply(
   db: AppDb, rfpId: number, quoteId: number, previousReplyId: number, scenario: CustomerScenario,
-  simulateFailure = false, text = "",
+  simulateFailure = false, text = "", model?: ModelConfig | null,
 ) {
   const delivered = await sentQuotes(db, rfpId);
   if (delivered[0]?.quote.id !== quoteId) throw new CloseoutError("Refresh before choosing a delivered quote.");
@@ -136,7 +137,7 @@ export async function simulateCustomerReply(
   const body = scenario === "custom" ? text : simulatedReply(scenario, rfpId, target.quote.version);
   if (!body.trim() || body.length > maxCustomerReplyLength) throw new CloseoutError("Enter a customer reply up to 20,000 characters.");
   const parsed = classifyCustomerReply(body, rfpId, target.quote.version);
-  const suggestion = scenario === "custom" && parsed.intent === "unclear" ? await suggestReviewIntent(body) : undefined;
+  const suggestion = scenario === "custom" && parsed.intent === "unclear" ? await suggestReviewIntent(body, model) : undefined;
   return receiveCustomerReply(db, {
     rfpId, inReplyTo: target.messageId, thread: target.thread, sender: target.quote.recipient, body,
     messageKey: `customer-reply:${target.messageId}:${previousReplyId}:${pricingHash(body)}`,

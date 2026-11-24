@@ -36,6 +36,8 @@ button, input { font: inherit; }
 .brand-name { font-weight: 760; letter-spacing: -.02em; line-height: 1.15; }
 .brand-name small { display: block; margin-top: .15rem; color: #b8c6e4; font-weight: 500; }
 .masthead-label { color: #dce5fa; font-size: .78rem; text-align: center; border: 1px solid #45516b; border-radius: 99px; padding: .3rem .65rem; }
+.masthead-lab { color: white; background: var(--accent); border: 1px solid #839cec; border-radius: 8px; padding: .45rem .75rem; font-size: .88rem; font-weight: 720; text-decoration: none; white-space: nowrap; }
+.masthead-lab:hover { background: #365bd1; }
 main.container { padding-bottom: 3rem; }
 .page-heading { padding: clamp(1.6rem, 4vw, 2.8rem) 0 clamp(1.05rem, 2.5vw, 1.65rem); }
 .page-heading p { margin-top: .55rem; color: var(--muted); }

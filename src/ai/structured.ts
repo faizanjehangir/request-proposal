@@ -1,7 +1,15 @@
 import { z } from "zod";
 
+export type ModelConfig = { key: string; model: string };
+
+export function configuredModel(): ModelConfig | null {
+  const key = process.env.OPENAI_API_KEY;
+  const model = process.env.RFP_OPENAI_MODEL;
+  return process.env.RFP_EXTRACTION_MODE === "openai" && key && model ? { key, model } : null;
+}
+
 export async function requestStructuredJson(
-  config: { key: string; model: string },
+  config: ModelConfig,
   name: string,
   schema: unknown,
   instructions: string,

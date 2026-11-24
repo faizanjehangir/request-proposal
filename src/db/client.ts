@@ -7,11 +7,14 @@ import * as schema from "./schema";
 
 const reviewer = { id: "demo-reviewer", name: "Demo reviewer" };
 
-export async function openDb(path = process.env.RFP_DB_PATH ?? ".data/rfp.sqlite") {
+export async function openDb(path = process.env.RFP_DB_PATH ?? ".data/rfp.sqlite", remote = {
+  url: process.env.TURSO_DATABASE_URL,
+  authToken: process.env.TURSO_AUTH_TOKEN,
+}) {
   // Hosted SQLite (Turso) when configured; otherwise a local file for development.
-  const tursoUrl = process.env.TURSO_DATABASE_URL;
+  const tursoUrl = remote.url;
   const client = tursoUrl
-    ? createClient({ url: tursoUrl, authToken: process.env.TURSO_AUTH_TOKEN })
+    ? createClient({ url: tursoUrl, authToken: remote.authToken })
     : createClient({
         url: `file:${(() => {
           const databasePath = resolve(/* turbopackIgnore: true */ path);

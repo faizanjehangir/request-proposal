@@ -20,6 +20,6 @@ export default defineConfig({
     command: `npm run start -- --port ${port}`,
     url: baseURL,
     reuseExistingServer: false,
-    env: { RFP_DB_PATH: dbPath },
+    env: { RFP_DB_PATH: dbPath, RFP_V2_MODEL_MODE: "fixture" },
   },
 });

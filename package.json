@@ -16,6 +16,7 @@
     "test:e2e": "npm run build && node scripts/run-node.cjs --import tsx scripts/run-e2e.ts"
   },
   "dependencies": {
+    "@langchain/langgraph": "^1.7.5",
     "@libsql/client": "^0.18.0",
     "@next/env": "^16.4.6",
     "drizzle-orm": "^0.45",
@@ -28,10 +29,10 @@
   "devDependencies": {
     "@playwright/test": "^1.65.1",
     "@types/better-sqlite3": "^7",
-    "better-sqlite3": "^12",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "better-sqlite3": "^12",
     "drizzle-kit": "^0.31.11",
     "exceljs": "^3.4.0",
     "tsx": "^4",

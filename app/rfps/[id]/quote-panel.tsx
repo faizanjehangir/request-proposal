@@ -1,3 +1,4 @@
+import { commercialModel, type LabTarget } from "@/src/lab/commercial-target";
 import { type getQuoteWorkspace } from "@/src/quotes/quote";
 import { quoteAiAvailable } from "@/src/quotes/wording";
 import { formatDate } from "../../components/dates";
@@ -21,7 +22,8 @@ function EmailPreview({ message, label }: { message: Message; label: string }) {
   );
 }
 
-export function QuotePanel({ rfpId, workspace }: { rfpId: number; workspace: Workspace }) {
+export function QuotePanel({ rfpId, workspace, labTarget, labMode }: { rfpId: number; workspace: Workspace; labTarget?: LabTarget; labMode?: "fixture" | "openai" }) {
+  const target = labTarget ?? rfpId;
   const { current, versions, approved, job, messages, ready, stale, closed } = workspace;
   const version = current ? `v${current.version}` : "";
   const sent = job?.status === "complete";
@@ -44,7 +46,7 @@ export function QuotePanel({ rfpId, workspace }: { rfpId: number; workspace: Wor
       {!ready && !current && <p className="pricing-note"><a href="#routing">Review lane decisions</a> or <a href="#pricing">check Pricing replies</a>.</p>}
 
       {!closed && ready && (!current || stale) && (
-        <RoutingForm action={generateQuote.bind(null, rfpId, current?.id ?? null)}
+        <RoutingForm action={generateQuote.bind(null, target, current?.id ?? null)}
           button={current ? "Create updated quote draft" : "Create quote draft"} primary />
       )}
 
@@ -59,22 +61,22 @@ export function QuotePanel({ rfpId, workspace }: { rfpId: number; workspace: Wor
               <details className="review-edit quote-wording">
                 <summary>Edit email wording</summary>
                 <p className="muted">Saving a wording change creates a new version for approval. Lane terms come from routing and Pricing.</p>
-                <RoutingForm key={current.id} action={saveQuoteWording.bind(null, rfpId, current.id)} button="Save as new version">
+                <RoutingForm key={current.id} action={saveQuoteWording.bind(null, target, current.id)} button="Save as new version">
                   <div className="field"><label htmlFor="quote-opening">Opening</label><textarea id="quote-opening" name="opening" rows={3} maxLength={2000} defaultValue={current.wording.opening} required /></div>
                   <div className="field"><label htmlFor="quote-closing">Closing</label><textarea id="quote-closing" name="closing" rows={3} maxLength={2000} defaultValue={current.wording.closing} required /></div>
                 </RoutingForm>
-                {quoteAiAvailable() && <RoutingForm action={generateAiQuote.bind(null, rfpId, current.id)} button="Generate new wording with AI" pendingLabel="Generating…" />}
+                {quoteAiAvailable(commercialModel(labMode)) && <RoutingForm action={generateAiQuote.bind(null, target, current.id)} button="Generate new wording with AI" pendingLabel="Generating…" />}
               </details>
-              {!approved && <RoutingForm action={approveCustomerQuote.bind(null, rfpId, current.id)} button={`Approve quote ${version}`} primary />}
+              {!approved && <RoutingForm action={approveCustomerQuote.bind(null, target, current.id)} button={`Approve quote ${version}`} primary />}
               {approved && !sent && (
                 job && job.status !== "canceled" ? (
                   <>
                     {job.lastError && <p className="routing-warning pricing-note">{job.lastError}</p>}
-                    <RoutingForm action={retryCustomerQuote.bind(null, rfpId, current.id)}
+                    <RoutingForm action={retryCustomerQuote.bind(null, target, current.id)}
                       button={job.lastError ? "Retry simulated send" : "Process queued send"} primary />
                   </>
                 ) : (
-                  <RoutingForm action={sendCustomerQuote.bind(null, rfpId, current.id)} button="Send simulated quote" pendingLabel="Sending…" primary>
+                  <RoutingForm action={sendCustomerQuote.bind(null, target, current.id)} button="Send simulated quote" pendingLabel="Sending…" primary>
                     <label className="check-option"><input type="checkbox" name="simulateFailure" />Simulate a temporary delivery failure</label>
                   </RoutingForm>
                 )

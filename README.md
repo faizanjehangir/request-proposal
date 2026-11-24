@@ -23,6 +23,8 @@ SQLite defaults to `.data/rfp.sqlite`. To use a different file, set `RFP_DB_PATH
 
 ## Review routes
 
+For the optional LangGraph workflow and interactive flight comparison, see the [V2 AI Lab instructions](docs/ai-v2-design-spec.md#run-the-local-lab).
+
 Open an imported RFP and select **Extract requirements and find routes**. The default fixture mode interprets the supplied sample notes and runs without credentials.
 
 - Open **MEX → CDG** for the compliant 11-day direct route and its dangerous-goods service evidence.

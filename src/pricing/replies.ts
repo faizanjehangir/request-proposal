@@ -1,3 +1,4 @@
+import type { ModelConfig } from "../ai/structured";
 import { getPricingExcerpts } from "./ai-extraction";
 import { and, desc, eq } from "drizzle-orm";
 import type { AppDb } from "../db/client";
@@ -77,7 +78,7 @@ export async function receivePricingReply(
 }
 
 export async function simulatePricingReply(
-  db: AppDb, rfpId: number, requestId: number, expectedReplyId: number | null, scenario: ReplyScenario, text?: string,
+  db: AppDb, rfpId: number, requestId: number, expectedReplyId: number | null, scenario: ReplyScenario, text?: string, model?: ModelConfig | null,
 ) {
   const request = await latestPricingRequest(db, rfpId);
   if (request?.id !== requestId) throw new PricingError("Refresh Pricing to use the active request.");
@@ -85,7 +86,7 @@ export async function simulatePricingReply(
   if (!body.trim() || body.length > maxPricingReplyLength) {
     throw new PricingError("Enter a nonempty Pricing reply under 1,000,000 characters.");
   }
-  const excerpts = scenario === "corrected" ? await getPricingExcerpts(body) : undefined;
+  const excerpts = scenario === "corrected" ? await getPricingExcerpts(body, model) : undefined;
   return receivePricingReply(db, {
     rfpId, requestId, body, sender: pricingFrom, thread: threadKey(requestId),
     messageKey: `pricing-reply:${requestId}:${expectedReplyId ?? 0}:${pricingHash(body)}`,

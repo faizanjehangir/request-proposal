@@ -23,7 +23,7 @@ async function record(
   }).run();
 }
 
-function analysisInput(rfp: ImportedRfp): ExtractionInput {
+export function analysisInput(rfp: ImportedRfp): ExtractionInput {
   const sources: RequirementSource[] = rfp.lanes.flatMap((lane) => lane.shipperNote?.trim() ? [{
     id: `workbook-row-${lane.sourceRow}`, label: `Shipper RFP · row ${lane.sourceRow}`,
     text: lane.shipperNote, laneId: lane.id,

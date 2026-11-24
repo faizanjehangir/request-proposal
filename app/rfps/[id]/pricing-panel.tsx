@@ -1,3 +1,4 @@
+import type { LabTarget } from "@/src/lab/commercial-target";
 import { maxPricingReplyLength } from "@/src/pricing/contracts";
 import { formatUsd, laneName, mockPricingReply, serviceDescription } from "@/src/pricing/rates";
 import type { getPricingWorkspace } from "@/src/pricing/replies";
@@ -79,7 +80,8 @@ function RateResults({ workspace }: { workspace: Workspace }) {
   );
 }
 
-export function PricingPanel({ rfpId, workspace }: { rfpId: number; workspace: Workspace }) {
+export function PricingPanel({ rfpId, workspace, labTarget }: { rfpId: number; workspace: Workspace; labTarget?: LabTarget }) {
+  const target = labTarget ?? rfpId;
   const { active, current, job, quoteReady, reply, stale, threads, additionalOffers, requestPriced } = workspace;
   const sent = job?.status === "complete";
   const pendingSend = job?.status === "pending" || job?.status === "running";
@@ -114,13 +116,13 @@ export function PricingPanel({ rfpId, workspace }: { rfpId: number; workspace: W
       )}
       {!current.blockedReason && (!pendingSend || needsUpdatedRequest) && (
         <RoutingForm
-          action={sendRateRequest.bind(null, rfpId, active?.id ?? null)}
+          action={sendRateRequest.bind(null, target, active?.id ?? null)}
           button={requestLabel}
           pendingLabel="Sending…" primary={!active || needsUpdatedRequest}
         />
       )}
       {active && !stale && !current.blockedReason && (pendingSend || job?.status === "failed") && (
-        <RoutingForm action={retryRateRequest.bind(null, rfpId, active.id)}
+        <RoutingForm action={retryRateRequest.bind(null, target, active.id)}
           button={job?.status === "failed" ? "Retry simulated send" : "Process queued send"} pendingLabel="Processing…" />
       )}
       {active && threads[0].messages.length > 0 && (
@@ -134,13 +136,13 @@ export function PricingPanel({ rfpId, workspace }: { rfpId: number; workspace: W
           <h3>Simulate the Pricing team’s reply</h3>
           <p className="muted">Use a complete reply to get rates for every requested lane. Incomplete and conflicting replies let you practice reviewing a missing rate or two different prices for the same lane.</p>
           <div className="pricing-reply-actions">
-            <RoutingForm action={sendPricingReply.bind(null, rfpId, active.id, replyId, "complete")} button="Simulate complete reply" primary={!requestPriced} />
-            <RoutingForm action={sendPricingReply.bind(null, rfpId, active.id, replyId, "incomplete")} button="Simulate incomplete reply" />
-            <RoutingForm action={sendPricingReply.bind(null, rfpId, active.id, replyId, "conflicting")} button="Simulate conflicting reply" />
+            <RoutingForm action={sendPricingReply.bind(null, target, active.id, replyId, "complete")} button="Simulate complete reply" primary={!requestPriced} />
+            <RoutingForm action={sendPricingReply.bind(null, target, active.id, replyId, "incomplete")} button="Simulate incomplete reply" />
+            <RoutingForm action={sendPricingReply.bind(null, target, active.id, replyId, "conflicting")} button="Simulate conflicting reply" />
           </div>
           <details className="pricing-correction">
             <summary>Send a corrected reply</summary>
-            <RoutingForm action={sendPricingReply.bind(null, rfpId, active.id, replyId, "corrected")} button="Send corrected reply">
+            <RoutingForm action={sendPricingReply.bind(null, target, active.id, replyId, "corrected")} button="Send corrected reply">
               <ReplyEditor id="pricing-reply-body" label="Corrected Pricing email" rows={6}
                 maxLength={maxPricingReplyLength} defaultValue={latestBody}
                 help="A corrected reply replaces the previous one. Include every requested lane, with one recommendation per line. Use an explicit USD amount per ton and the exact services offered, or standard handling only. Load an example for this request, then edit it before sending."
